@@ -1,0 +1,16 @@
+int bitOr(int, int);
+int test_bitOr(int, int);
+int isEqual(int, int);
+int test_isEqual(int, int);
+int isNonZero(int);
+int test_isNonZero(int);
+int isPositive(int);
+int test_isPositive(int);
+int logicalNeg(int);
+int test_logicalNeg(int);
+int multFiveEights(int);
+int test_multFiveEights(int);
+int negate(int);
+int test_negate(int);
+int tc2sm(int);
+int test_tc2sm(int);
