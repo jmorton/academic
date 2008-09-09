@@ -1,0 +1,9 @@
+8
+Leesburg 6.2
+Dulles 4.9
+Herndon 5.9
+Oakton 8.9
+Annandale 7.3
+Manassas 6.3
+Clarksburg 5.5
+ChevyChase 4.1
