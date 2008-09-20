@@ -25,11 +25,11 @@ team_struct team =
       Your login ID if working as a one person team
       or, ID1+ID2 where ID1 is the login ID of the first team member
       and ID2 is the login ID of the second team member */
-    "", 
+    "jmorton6", 
    /* Student name 1: Replace with the full name of first team member */
-   "",
+   "Jonathan Morton",
    /* Login ID 1: Replace with the login ID of first team member */
-   "",
+   "jmorton6",
 
    /* The following should only be changed if there are two team members */
    /* Student name 2: Full name of the second team member */
@@ -140,11 +140,8 @@ NOTES:
  *   Rating: 1
  */
 int bitOr(int x, int y) {
-
-
-
-  return 2;
-
+  // using de morgan's law
+  return ~ (~x & ~y);
 }
 /* 
  * isEqual - return 1 if x == y, and 0 otherwise 
@@ -154,11 +151,9 @@ int bitOr(int x, int y) {
  *   Rating: 2
  */
 int isEqual(int x, int y) {
-
-
-
-  return 2;
-
+  // two ints are equal if AND-ing one and the inverse
+  // of the other produces zero.
+  return ! (x ^ y);
 }
 /* 
  * isNonZero - Check whether x is nonzero using
@@ -169,12 +164,7 @@ int isEqual(int x, int y) {
  *   Rating: 4 
  */
 int isNonZero(int x) {
-
-
-
-
-  return 2;
-
+  return 0;
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -184,11 +174,7 @@ int isNonZero(int x) {
  *   Rating: 3
  */
 int isPositive(int x) {
-
-
-
-  return 2;
-
+  return ((~x+1)>>31) & (~x>>31) & 1;
 }
 /* 
  * logicalNeg - implement the ! operator, using all of 
@@ -199,12 +185,10 @@ int isPositive(int x) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-
-
-
-
-  return 2;
-
+  // zero is the only number that complemented
+  // and inversed-and-complemented is the
+  // same: (-1) -- check for signbit sameness
+  return ( ( (~x) & (~(~x+1)) ) >> 31 ) & 1;
 }
 /*
  * multFiveEights - multiplies by 5/8 rounding toward 0.
@@ -216,13 +200,12 @@ int logicalNeg(int x) {
  *   Rating: 3
  */
 int multFiveEights(int x) {
-
-
-
-
-
-  return 2;
-
+  // 5x * 1/8 -- rounding error though!!
+  // return (((((x << 2) + x) ^ 0) + (1<<3) + (~0)) >> 3);  
+  int timesFive = ((x << 2) + x);
+  int sign = timesFive >> 31 & 1;
+  
+  return (timesFive + (sign << 3) - sign) >> 3;
 }
 /* 
  * negate - return -x 
@@ -232,11 +215,7 @@ int multFiveEights(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-
-
-
-  return 2;
-
+  return ~x + 1;
 }
 /* 
  * tc2sm - Convert from two's complement to sign-magnitude 
@@ -248,13 +227,16 @@ int negate(int x) {
  *   Rating: 4
  */
 int tc2sm(int x) {
+  // just doing the reverse of two's complement --
+  // subtract one and flip, applying the signbit
+  // again if it existed to begin with.
+  int sign = x>>31;
+  
+  int clean = (sign << 31); // clean the signbit
 
-
-
-
-
-
-
-  return 2;
-
+  int a = (sign ^ x);   // does nothing for positive numbers
+  int b = (~sign + 1);  // for negative numbers makes 000..1
+                        // for positive numbers makes 111..0
+  
+  return clean + a + b;
 }
