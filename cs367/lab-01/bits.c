@@ -164,7 +164,13 @@ int isEqual(int x, int y) {
  *   Rating: 4 
  */
 int isNonZero(int x) {
-  return 0;
+  // "replicate" any 1 to the least significant bit
+  int y = x >> 16 | x;
+  y = y >> 8 | y;
+  y = y >> 4 | y; 
+  y = y >> 2 | y;
+  y = y >> 1 | y; 
+  return y & 1;
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
