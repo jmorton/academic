@@ -1,0 +1,82 @@
+?- prereq_chain(geo101,cs367).
+false.
+
+?- prereq_chain(cs101,cs211).
+true.
+
+?- prereq_chain(cs211,cs367).
+true .
+
+?- prereq_chain(cs101,cs367).
+true .
+
+?- prereq_chain(cs101, Class).
+Class = cs211 ;
+Class = cs330 ;
+Class = cs310 ;
+Class = cs367 ;
+Class = cs421 ;
+false.
+
+?- prereq_chain(Class, cs465).
+Class = cs367 ;
+Class = cs330 ;
+Class = cs211 ;
+Class = cs211 ;
+false.
+
+?- invalid_pair(bad, cs211, cs367).
+true .
+
+?- invalid_pair(bad, cs367, cs211).
+true .
+
+?- invalid_pair(bad,Course1,Course2).
+Course1 = cs211,
+Course2 = cs330 ;
+Course1 = cs211,
+Course2 = cs367 ;
+Course1 = cs330,
+Course2 = cs211 ;
+Course1 = cs367,
+Course2 = cs211 ;
+false.
+
+?- invalid_pair(jon,cs101,cs367).
+false.
+
+?- invalid_pair(jon,cs367,cs101).
+false.
+
+?- invalid_pair(jon,Course1,Course2).
+false.
+
+?- no_invalid_pairs(bad).
+false.
+
+?- no_invalid_pairs(jon).
+true.
+
+?- no_invalid_pairs(Student).
+Student = jon.
+
+?- bad_course(bad,geo101).
+false.
+
+?- bad_course(bad,Course).
+Course = geo201 .
+
+?- bad_course(jon,Course).
+false.
+
+?- no_bad_courses(jon).
+true .
+
+?- no_bad_courses(Student).
+Student = jon .
+
+?- missing_course(bad,Course).
+Course = cs101 .
+
+?- missing_course(jon,Course).
+false.

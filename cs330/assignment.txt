@@ -1,0 +1,112 @@
+
+CS 330  ---  Fall 2008 ---  Program #1 - Prolog  ---   Due: Nov 4, 11:59PM.
+
+
+ASSIGNMENT: This assignment concerns facts that might be part of 
+a larger (Prolog-style) system for students (proposed) academic schedules. 
+
+FACTS: For each student there will be facts about them and their schedule, 
+such as:
+
+    student(bob,cs).
+	entry(bob,cs211,[fall,2008]).
+
+Also there will facts about the university's prerequisite policies, such as:
+
+	prereq(cs211,cs330).
+
+Further there is a list of courses approved for the major (there will be only 
+two major in this assignment) that should appear as a fact in this fashion:
+
+   approved_list(cs,[cs211,cs330,cs450,cs480,phys211,phys212]).
+   approved_list(geog,[geol101,geog309,eos310,eos312,math113]).
+
+You will need additional facts about how semesters are ordered, i.e., spring 
+is earlier than summer, and summer is earlier than fall.
+
+RULES: You will write the following rules:
+
+  prereq_chain(X,Y)      This succeeds if X is a prereq of Y, even indirectly.
+
+  invalid_pair(X,Y,Z)    This succeeds if person X schedules courses Y and Z 
+                         that violate the University's prerequisite policy.
+
+  no_invalid_pairs(X)    This succeeds if invalid(X,Y,Z) is not true.
+
+  bad_course(X,Y)        This succeeds if person X schedules a course 
+                         Y that is not approved for the major.
+
+  no_bad_courses(X)      This succeeds if bad_course(X,Y) is not true.
+
+  missing_course(X,Y)    This succeeds if person X is missing a course Y that
+                         is a prereq of some course on X's schedule.
+                          
+You will need to write other auxiliary rules as well, including:
+
+  member(X,[list])       This succeeds if X is a member of [list]. (This rule
+                         is given in chapter 7 of the text.) It will also
+                         be helpful to write a rule not_member(X,[list]) 
+                         that succeeds if member(X,[list]) is false.
+
+  notbefore([S1,Y1],     This succeeds if semester [S1,Y1] does not occur 
+     [S2,Y2])            before semester [S2,Y2]. For example, [fall,2000] 
+                         does not occur before [spring, 2000]. 
+                         
+Submit: Generate a session script in which you enter Prolog, load your facts 
+and rules and type in queries to test your program. You will be judged in part
+on the variety and sensibility of the queries (see Figure 7.1)  Submit your 
+project by emailing your fact  and rule files and the session script to the TA,
+as attachments. Use "PA1" as the subject of your email.  We may execute your 
+rules with our own facts.
+
+Help: You may get help from anyone with Prolog, but do the assignment yourself. 
+This pertains to implementing the rules, and running the tests.  See the CS 
+departmnent project policy: cs.gmu.edu/wiki/pmwiki.php/HonorCode/CSHonorCodePolicies.
+
+
+
+
+SOME POINTERS
+
+Files: Before entering a Prolog session, create a file (using any editor) that
+contains the facts and rules you wish to test. Start with simple predicates.  
+  Avoid blanks between the predicate and the left parenthesis 
+  Start variable names with Capitals. 
+  Start predicates, facts and data names with lower case letters. 
+  Don't forget the period at the end of facts and rules. 
+
+Starting:  At the Unix prompt, type the Unix command prolog to start
+interacting with the Quintus Prolog interpreter on the GMU server.  To load 
+your facts and/or rules from a file called file1 into the session, type 
+[file1].  ending with a period.  If you entered Prolog while not in the
+directory containing the file, give the full path, within single quotes: 
+['pro/file1']. (You can also use the consult() command as described in the 
+text.) You can load two files at once, like this: [factfile, rulefile]. If 
+you unintentionally hit the <return> key without the period, just type a 
+period and another <return>.  
+
+Stopping:  Before you start anything, know how to stop it! To halt a Prolog 
+session, use halt. which is a Prolog predicate with no arguments, with the 
+side-effect of exiting Prolog.  To stop an unresponsive Prolog process that
+may be in an infinite loop, use <control-c>  a .
+
+Tracing:  For debugging, you can have the Prolog processor trace the steps by 
+which it reached its conclusions.  This can get pretty complex, though, so you
+may want to turn it off.  To start the process type trace. and to turn it off,
+use notrace.
+
+Scripts: script is a Unix command that starts a script session. Everything you
+then type, plus the computer output, is copied to the file typescript (or to
+the file given as an argument, e.g., myoutfile) when you exit the script
+session by typing <control-d>.    
+
+                         Starting      ...    Stopping    
+                         --------             --------
+      Prolog session:    prolog               halt.    
+      Prolog process:    pred(arg1, arg2).    control-c a
+      Tracing:           trace.               notrace.    
+      Script session:    script myoutfile     control-d    
+
+Online help: To get Prolog help, type the special predicate help. which tells 
+you about the special predicate manual(...).  You can also search Google for 
+Quintus Prolog.
