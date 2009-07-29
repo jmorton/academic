@@ -51,6 +51,12 @@ missing_course(Student,MissingCourse) :-
   entry(Student,Course,_),
   prereq_chain(MissingCourse,Course),
   not_enrolled(Student,MissingCourse).
+  
+missing_course_b(Student,MissingCourse) :-
+  entry(Student,Course,_),
+  prereq_chain(MissingCourse,Course),
+  entry(Student,MissingCourse,_);
+  fail.
 
 not_member(K,L) :- member(K,L),!,fail.
 not_member(_,_).

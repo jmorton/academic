@@ -1,0 +1,116 @@
+%{
+int year;
+char* performer;
+char* title;
+char* currentPlayer;
+
+char accordion[1024];
+char banjo[1024];
+char fiddle[1024];
+char flute[1024];
+char guitar[1024];
+char percussion[1024];
+char vocals[1024];
+
+%}
+
+%s GET_TITLE
+%s GET_DATE
+%s GET_ARTIST
+%s GET_INSTRUMENTS
+%s DO_DISPLAY
+
+Space [ \t\n]+
+Block [^.]+
+Player [^ \t][^(]+[a-z]
+Instruments \(
+
+%%
+\.  ;
+<INITIAL>{Block}   {
+  performer = strdup(yytext);
+  accordion[0] = '\0';
+  banjo[0] = '\0';
+  fiddle[0] = '\0';
+  flute[0] = '\0';
+  guitar[0] = '\0';
+  percussion[0] = '\0';
+  vocals[0] = '\0';
+  BEGIN GET_TITLE;
+  }
+
+<GET_TITLE>{Space}+ ;
+<GET_TITLE>{Block} { title = strdup(yytext); BEGIN GET_DATE; }
+
+<GET_DATE>{Space}+ ;
+<GET_DATE>\[ ;
+<GET_DATE>[0-9]{4} { year = atoi(yytext); }
+<GET_DATE>\] BEGIN GET_ARTIST;
+
+<GET_ARTIST>{Space}+ ;
+<GET_ARTIST>{Player} {
+  currentPlayer = strdup(yytext);
+  BEGIN GET_INSTRUMENTS;
+  }
+
+<GET_INSTRUMENTS>[(, ] ;
+<GET_INSTRUMENTS>accordion {
+  if (strlen(accordion) > 0) strcat(accordion, ", ");
+  strcat(accordion, currentPlayer);
+  }
+<GET_INSTRUMENTS>banjo {
+  if (strlen(banjo) > 0) strcat(banjo, ", ");
+  strcat(banjo, currentPlayer);
+  }
+<GET_INSTRUMENTS>fiddle {
+  if (strlen(fiddle) > 0) strcat(fiddle, ", ");
+  strcat(fiddle, currentPlayer);
+  }
+<GET_INSTRUMENTS>flute {
+  if (strlen(flute) > 0) strcat(flute, ", ");
+  strcat(flute, currentPlayer);
+  }
+<GET_INSTRUMENTS>guitar {
+  if (strlen(guitar) > 0) strcat(guitar, ", ");
+  strcat(guitar, currentPlayer);
+  }
+<GET_INSTRUMENTS>percussion {
+  if (strlen(percussion) > 0) strcat(percussion, ", ");
+  strcat(percussion, currentPlayer);
+  }
+<GET_INSTRUMENTS>vocals {
+  if (strlen(vocals) > 0) strcat(vocals, ", ");
+  strcat(vocals, currentPlayer);
+  }
+<GET_INSTRUMENTS>")", { BEGIN GET_ARTIST; }
+<GET_INSTRUMENTS>")."? { BEGIN DO_DISPLAY; }
+
+<DO_DISPLAY>\n {
+  printf("%i --%s/%s. ", year, title, performer);
+
+  if (strlen(accordion) > 0)
+    printf("accordion: %s; ", accordion);
+
+  if (strlen(banjo) > 0)
+    printf("banjo: %s; ", banjo);
+
+  if (strlen(fiddle) > 0)
+    printf("fiddle: %s; ", fiddle);
+
+  if (strlen(flute) > 0)
+    printf("flute: %s; ", flute);
+
+  if (strlen(guitar) > 0)
+    printf("guitar: %s; ", guitar);
+    
+  if (strlen(percussion) > 0)
+    printf("percussion: %s; ", percussion);
+
+  if (strlen(vocals) > 0)
+    printf("vocals: %s; ", vocals);
+
+  printf("\n");
+  
+  /* for each instrument: instrument name and each player if players > 0 */
+  BEGIN INITIAL;
+  }
