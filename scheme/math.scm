@@ -47,3 +47,18 @@
 
 (print (addtup '(1 2 3)))
 (print (addtup '(1 5 9)))
+
+; add m together n times
+(define times
+  (lambda (m n)
+    (cond
+      ; terminal case, n is zero
+      ((zero? n) 0)
+      (else (plus m (times m (sub1 n)))))))
+      
+(print (times 1 1))
+(print (times 1 2))
+(print (times 1 3))
+(print (times 2 2))
+(print (times 3 3))
+(print (times 7 11))
