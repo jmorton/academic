@@ -32,3 +32,18 @@
 (print (minus 1 1))
 (print (minus 5 1))
 (print (minus 1 2))
+
+; builds a new tup by adding together each number in tup
+(define addtup
+  (lambda (tup)
+    (cond
+      ; terminal case
+      ((null? tup) 0)
+      ; recursive case
+      (else
+        (plus (car tup)
+          ; naturnal recursion
+          (addtup (cdr tup)))))))
+
+(print (addtup '(1 2 3)))
+(print (addtup '(1 5 9)))
