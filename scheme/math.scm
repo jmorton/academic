@@ -62,3 +62,29 @@
 (print (times 2 2))
 (print (times 3 3))
 (print (times 7 11))
+
+; builds a tup by adding together each successive atom in two tups
+(define tup+
+  (lambda (tup1 tup2)
+    (cond
+      ((and (null? tup1) (null? tup2)) '())
+      ((null? tup1) (tup+ tup2 tup2))
+      ((null? tup2) '())
+      (else (cons (plus (car tup1) (car tup2)) (tup+ (cdr tup1) (cdr tup2)))))))
+
+(print (tup+ '(1 1 1) '(1 2 3)))
+(print (tup+ '(1 1 1) '(1 2 3 4)))
+
+; m is less than n
+(define <
+	(lambda (m n)
+		(cond
+			((zero? m) 
+				(cond
+					((zero? n) #f)
+					(else #t)))
+			(else (< (sub1 m) (sub1 n))))))
+		
+(print (< 1 2))
+(print (< 1 1))
+(print (< 2 1))
