@@ -23,3 +23,11 @@
 			((< n m) #f)
 			(else #t)
 )))
+
+; n raised to the m_th power
+(define ^	
+	(lambda (n m)
+		(cond
+			((zero? m) 1)
+			(else (times n (^ n (sub1 m))))
+)))
