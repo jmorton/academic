@@ -1,0 +1,24 @@
+generate_key
+
+encrypt:
+	in: key, plaintext
+	out: cipher_text
+	assert 64 bits of plaintext
+
+decrypt:
+	in: key, cipher_text
+	out: plaintext
+	assert 64 bits of ciphertext
+
+tests:
+  decrypt(encrypt(P, key), key) == P
+
+round:
+  concat(right_side, xor(mangle(right_side), left_side))
+
+mangle:
+  xor(left_side, permutation(substitution(xor(expand(text),sub_key(key)))))
+
+constants:
+pbox, sbox
+initial permutation
