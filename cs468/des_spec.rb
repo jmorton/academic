@@ -20,10 +20,17 @@ describe 'Permutation' do
   end
   
   it 'should perform basic permutation' do
-    map = %w(3, 2, 1)
+    map = %w(3 2 1)
     values = %w(a b c)
     
     DES::Utility.permute(map, values).should eql(values.reverse)
+  end
+  
+  it 'should work when applying S-DES initial and final permutation' do
+    before_p =%w(a b c d e f g h)
+    after_p  =%w(b f c a d h e g)
+    DES::Utility.permute(DES::Initial, before_p).should eql(after_p)
+    DES::Utility.permute(DES::Final, after_p).should eql(before_p)
   end
   
   it 'should complain about differently sized maps and values' do
