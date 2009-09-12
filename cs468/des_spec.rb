@@ -13,6 +13,15 @@ describe 'Binary/Decimal conversion' do
   end
 end
 
+describe 'Flip' do
+  
+  it 'Basic flipping works' do
+    DES::Utility.flip([0,1]).should eql([1,0])
+    DES::Utility.flip([1,2,3,4,5,6,7,8]).should eql([5,6,7,8,1,2,3,4])
+  end
+  
+end
+
 describe 'Permutation' do
   
   it 'should support permutation' do

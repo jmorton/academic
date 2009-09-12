@@ -16,6 +16,12 @@ module DES
           
   module Utility
   
+    def self.flip(a)
+      last = a.length
+      half = last / 2
+      a[half..last] + a[0...half]
+    end
+     
     def self.dec_to_bin(x)
       x.to_i.to_s(2)
     end
