@@ -1,0 +1,7 @@
+plain-17.txt
+Robert Simon
+E
+1100100001
+ECB
+00000000
+Technology is a way of organizing the universe so that man doesn't have to experience it.
