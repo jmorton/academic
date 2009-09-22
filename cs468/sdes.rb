@@ -1,4 +1,3 @@
-
 module SDES
   
   Initial = %w(2 6 3 1 4 8 5 7)
@@ -27,7 +26,14 @@ module SDES
   
   module Key
     
+    # input: a binary number as a string: "0000011111"
+    # output: a pair of subkeys
     def self.subkey(key)
+
+      if key.length != 10
+        raise "Key must be of length 10 but was #{key.length}"
+      end
+      
       permuted_key = _p10(key)
       
       k1 = _p8( _ls1(_hi(permuted_key)) + _ls1(_lo(permuted_key)))
@@ -91,8 +97,10 @@ module SDES
     def self.mangle(input, key)
       left = input[0..3]
       right = input[4..7]
+      subkey = SDES::Key.subkey(key)
       
-      left ^ (expand(SDES::EP, right) ^ key)
+      left ^ (expand(SDES::EP, right) ^ subkey.first)
+
     end
   
     def self.flip(a)
@@ -123,7 +131,7 @@ module SDES
 end
 
 class Fixnum
-  def bin(padding)
+  def bin(padding=0)
     SDES::Utility.dec_to_bin(self, padding)
   end
 end

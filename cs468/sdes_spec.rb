@@ -1,5 +1,41 @@
 require 'sdes'
 
+describe 'Input' do
+  
+  before(:each) do
+    @input = SDES::Input.new('plain-test.txt')
+  end
+  
+  it 'should parse an encrypted file' do
+    @input.should_not be_blank
+  end
+  
+  it 'should have the file name' do
+    @input.file_name.should eql("plain-test.txt")
+  end
+  
+  it 'should have the student name' do
+    @input.student_name.should eql("Name of Student")
+  end
+  
+  it 'should want to be encrypted' do
+    @input.encrypt?.should be_true
+  end
+  
+  it 'should have a key' do
+    @input.key.should eql("")
+  end
+  
+  it 'should have an initialization vector' do
+    @input.initialization_vector.should eql("")
+  end
+  
+  it 'should have plain text' do
+    @input.plain_text.should eql("Technology is a way of organizing the universe so that man doesn't have to experience it.")
+  end
+  
+end
+
 describe 'Binary/Decimal conversion' do
   
   it 'should convert decimal to binary' do
