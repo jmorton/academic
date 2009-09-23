@@ -14,7 +14,6 @@ module SDES
       self.mode = line[2].chomp
       self.key = line[3].chomp
       self.content = line[6]
-    
     end
   
     def encrypt?
