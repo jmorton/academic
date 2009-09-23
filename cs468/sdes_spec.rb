@@ -1,13 +1,13 @@
 require 'sdes'
 
-describe 'Input' do
+describe 'Encryption' do
   
   before(:each) do
     @input = SDES::Input.new('plain-test.txt')
   end
   
   it 'should parse an encrypted file' do
-    @input.should_not be_blank
+    @input.should_not be_nil
   end
   
   it 'should have the file name' do
@@ -19,21 +19,51 @@ describe 'Input' do
   end
   
   it 'should want to be encrypted' do
+    @input.mode.should eql("E")
     @input.encrypt?.should be_true
   end
   
   it 'should have a key' do
-    @input.key.should eql("")
+    @input.key.should eql("1100100001")
   end
   
-  it 'should have an initialization vector' do
-    @input.initialization_vector.should eql("")
+  it 'should have content' do
+    @input.content.should eql("Technology is a way of organizing the universe so that man doesn't have to experience it.\n")
   end
   
-  it 'should have plain text' do
-    @input.plain_text.should eql("Technology is a way of organizing the universe so that man doesn't have to experience it.")
+  it 'should support encryption of the file' do
+    @input.should respond_to(:encrypt)
   end
   
+  it 'should encrypt using the SDES::Utility' do
+    @input.encrypt.should eql("110001011101101110110101010001111100011111111110110001101111111011010000110100110010100101001100000101100010100101011110001010010111001101011110110100110010100111111110101010010010100111111110001001101101000001011110110001110100110011001001010011001100011111010000001010010110100101000111110110110010100101001010110001110100110010100111110110110010011000010110110110110010100100010110111111100010100101101001010001110101111001101001001010010000110101011110110001110010100111111100111111101101101100010110110001110100010001101001001010010100011101011110101001111101101100101001011010011111111000101001110110110000011100101000110110110010011001001100110110111100011110110101110110110010100101001100011010010001011111111010")
+  end
+  
+end
+
+describe 'Decryption' do
+  
+  before(:each) do
+    @plain_text = "Technology is a way of organizing the universe so that man doesn't have to experience it.\n"
+    @cipher_text = "110001011101101110110101010001111100011111111110110001101111111011010000110100110010100101001100000101100010100101011110001010010111001101011110110100110010100111111110101010010010100111111110001001101101000001011110110001110100110011001001010011001100011111010000001010010110100101000111110110110010100101001010110001110100110010100111110110110010011000010110110110110010100100010110111111100010100101101001010001110101111001101001001010010000110101011110110001110010100111111100111111101101101100010110110001110100010001101001001010010100011101011110101001111101101100101001011010011111111000101001110110110000011100101000110110110010011001001100110110111100011110110101110110110010100101001100011010010001011111111010"
+    @key = "1100100001"
+  end
+  
+  it 'should encrypt' do
+    SDES::Utility.encrypt(@plain_text, @key).should eql(@cipher_text)
+  end
+
+  it 'should decrypt' do
+    SDES::Utility.decrypt(@cipher_text, @key).should eql(@plain_text) 
+  end
+  
+  it 'should encrypt and decrypt something' do
+    key = "1010101010"
+    original_text = "Attack at dawn!"
+    cipher_text = SDES::Utility.encrypt(original_text, key)
+    SDES::Utility.decrypt(cipher_text, key).should eql(original_text)
+  end
+
 end
 
 describe 'Binary/Decimal conversion' do
@@ -103,39 +133,39 @@ describe 'Substitution' do
   end
   
   it 'should perform basic substitution' do
+    s0 = SDES::S0
     s1 = SDES::S1
-    s2 = SDES::S2
     
-    SDES::Utility.substitute("0000",s1).should eql(1)
-    SDES::Utility.substitute("0001",s1).should eql(3)
-    SDES::Utility.substitute("1111",s1).should eql(2)
+    SDES::Utility.substitute("0000",s0).should eql(1)
+    SDES::Utility.substitute("0001",s0).should eql(3)
+    SDES::Utility.substitute("1111",s0).should eql(2)
     
-    SDES::Utility.substitute("0000",s2).should eql(0)
-    SDES::Utility.substitute("0001",s2).should eql(2)
-    SDES::Utility.substitute("1111",s2).should eql(3)
+    SDES::Utility.substitute("0000",s1).should eql(0)
+    SDES::Utility.substitute("0001",s1).should eql(2)
+    SDES::Utility.substitute("1111",s1).should eql(3)
   end
   
   it 'should calculate the row using the first and last char' do
     # Testing the row/col values that should be generated and
     # not the values that are in individual mappings.
-    s1 = SDES::S1
+    s0 = SDES::S0
     m1 = Proc.new { |row, column| [row, column] }
     
-    SDES::Utility.substitute("0000",s1,&m1).should eql([0,0])
-    SDES::Utility.substitute("0001",s1,&m1).should eql([1,0])
-    SDES::Utility.substitute("0010",s1,&m1).should eql([0,1])
-    SDES::Utility.substitute("0011",s1,&m1).should eql([1,1])
-    SDES::Utility.substitute("0100",s1,&m1).should eql([0,2])
-    SDES::Utility.substitute("0101",s1,&m1).should eql([1,2])
-    SDES::Utility.substitute("0110",s1,&m1).should eql([0,3])
-    SDES::Utility.substitute("1000",s1,&m1).should eql([2,0])
-    SDES::Utility.substitute("1001",s1,&m1).should eql([3,0])
-    SDES::Utility.substitute("1010",s1,&m1).should eql([2,1])
-    SDES::Utility.substitute("1011",s1,&m1).should eql([3,1])
-    SDES::Utility.substitute("1100",s1,&m1).should eql([2,2])
-    SDES::Utility.substitute("1101",s1,&m1).should eql([3,2])
-    SDES::Utility.substitute("1110",s1,&m1).should eql([2,3])
-    SDES::Utility.substitute("1111",s1,&m1).should eql([3,3])
+    SDES::Utility.substitute("0000",s0,&m1).should eql([0,0])
+    SDES::Utility.substitute("0001",s0,&m1).should eql([1,0])
+    SDES::Utility.substitute("0010",s0,&m1).should eql([0,1])
+    SDES::Utility.substitute("0011",s0,&m1).should eql([1,1])
+    SDES::Utility.substitute("0100",s0,&m1).should eql([0,2])
+    SDES::Utility.substitute("0101",s0,&m1).should eql([1,2])
+    SDES::Utility.substitute("0110",s0,&m1).should eql([0,3])
+    SDES::Utility.substitute("1000",s0,&m1).should eql([2,0])
+    SDES::Utility.substitute("1001",s0,&m1).should eql([3,0])
+    SDES::Utility.substitute("1010",s0,&m1).should eql([2,1])
+    SDES::Utility.substitute("1011",s0,&m1).should eql([3,1])
+    SDES::Utility.substitute("1100",s0,&m1).should eql([2,2])
+    SDES::Utility.substitute("1101",s0,&m1).should eql([3,2])
+    SDES::Utility.substitute("1110",s0,&m1).should eql([2,3])
+    SDES::Utility.substitute("1111",s0,&m1).should eql([3,3])
   end
  
 end
@@ -173,6 +203,35 @@ describe 'Circular shifting' do
   
 end
 
+describe 'Encryption' do
+  
+  it 'should encrypt a single character with a key correctly' do
+    input = "Tech"
+    key = "1100100001"
+    
+    encrypted = SDES::Utility.encrypt(input, key)
+    encrypted.length.should eql(32)
+    encrypted.should eql("11000101110110111011010101000111")
+    
+    p encrypted
+  end
+  
+end
+
+describe 'Mangling (f function)' do
+
+  it 'should fk' do
+    pending
+  end
+  
+  it 'should f' do
+    b = "0000"
+    k = "11001010"
+    SDES::Utility.f(b,k).should eql("1000")
+  end
+
+end
+
 describe 'Generating one key from another' do
   it 'should generate a pair' do
     keys = SDES::Key.subkey("1010000010")
@@ -204,4 +263,14 @@ describe 'Generating one key from another' do
     SDES::Key._p8("0010000011").should eql("01000011")
   end
   
+end
+
+describe 'Array extensions' do
+  it 'should convert a set of ints to a string' do
+    [97,98,99].as_str.should eql("abc")
+  end
+  
+  it 'should convert a set of chars to a string' do
+    ['a','b','c'].as_str.should eql("abc")
+  end
 end
