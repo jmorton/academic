@@ -3,7 +3,7 @@ require 'sdes'
 describe 'Input of files for processing' do
   
   before(:each) do
-    @input = SDES::IO.new('spec/plain-17.txt')
+    @input = SDES::IO.new('spec/plain-2.txt')
   end
   
   it 'should parse an encrypted file' do
@@ -11,7 +11,7 @@ describe 'Input of files for processing' do
   end
   
   it 'should have the file name' do
-    @input.file_name.should eql("plain-17.txt")
+    @input.file_name.should eql("spec/plain-2.txt")
   end
   
   it 'should have the student name' do
@@ -45,7 +45,7 @@ end
 describe 'Input file for decryption processing' do
 
   before(:each) do
-    @input = SDES::IO.new('spec/crypt-17.txt')
+    @input = SDES::IO.new('spec/crypt-1.txt')
   end
 
   it 'should support decrypting of the file' do
@@ -61,22 +61,22 @@ end
 describe 'Input and output of files' do
 
   it 'should rename plain-n.txt to crypt-n.txt' do
-    @f = SDES::IO.new("spec/plain-17.txt")
-    @f.output_path.should eql('crypt-17.txt')
+    @f = SDES::IO.new("spec/plain-2.txt")
+    @f.output_path.should eql('spec/crypt-2.txt')
   end
 
   it 'should rename crypt-n.txt to plain-n.txt' do
-    @f = SDES::IO.new("spec/crypt-17.txt")
-    @f.output_path.should eql('plain-17.txt')
+    @f = SDES::IO.new("spec/crypt-1.txt")
+    @f.output_path.should eql('spec/plain-1.txt')
   end
 
   it 'should be able to output a file' do
-    @f = SDES::IO.new("spec/crypt-17.txt")
+    @f = SDES::IO.new("spec/crypt-1.txt")
     @f.process!
   end
 
   it 'should be able to write to another file' do
-    @f = SDES::IO.new("spec/plain-17.txt")
+    @f = SDES::IO.new("spec/plain-2.txt")
     @f.process!
   end
 
@@ -86,13 +86,20 @@ describe 'Input and output of files' do
       @f.process!
     }.should raise_error
   end
+  
+  # Cleanup generated files.
+  after(:all) do
+    File.delete('spec/plain-1.txt') rescue nil
+    File.delete('spec/crypt-2.txt') rescue nil
+  end
 
 end
 
 describe 'Parsing files' do
   it 'should consult a filelist' do
+    SDES::IO.should_receive(:new).with('spec/crypt-1.txt')
+    SDES::IO.should_receive(:new).with('spec/plain-2.txt')
     SDES::IO.process('spec/cs468-filelist.txt')
-    SDES::IO.should_receive(:new).with('plain-1.txt')
   end
 end
 

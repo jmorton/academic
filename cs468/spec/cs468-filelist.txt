@@ -1,3 +1,2 @@
-plain-1.txt
-crypt-2.txt
-missing-3.txt
+spec/crypt-1.txt
+spec/plain-2.txt

@@ -1,4 +1,4 @@
-crypt-17.txt
+spec/crypt-1.txt
 Name of Student
 D
 1100100001

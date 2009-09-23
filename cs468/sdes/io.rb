@@ -53,7 +53,11 @@ module SDES
     def self.process(filelist)
       paths = open(filelist).readlines
       saved = paths.map do |path|
-        SDES::IO.new(path.chomp).process!
+        begin
+          SDES::IO.new(path.chomp).process!
+        rescue
+          "Could not process '#{path}'"
+        end
       end
       
       saved

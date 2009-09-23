@@ -12,6 +12,8 @@ end
 
 desc "Decrypt the files in the current directory"
 task :process do |t|
-  output = SDES::IO.process("cs468-filelist.txt")
-  output.each { |path| puts "Created #{path}" }
+  FileUtils.cd("input") do
+    output = SDES::IO.process("cs468-filelist.txt")
+    output.each { |path| puts "Created #{path}" }
+  end
 end
