@@ -31,7 +31,7 @@ module SDES
 
     # [48, 48, 49, 48, 49] => ['0', '0', '1', '0', '1'] => '00101'
     def self.f(bits, subkey)
-      e = expand(SDES::EP, bits).as_str.dec
+      e = expand(SDES::EP, bits).dec
       r = (e ^ subkey.dec).bin
       r1 = r[0..3]
       r2 = r[4..7]
@@ -40,7 +40,7 @@ module SDES
       s1 = select_from(SDES::S1, r2).to_i.bin(2)
       pr = (s0+s1).dec.bin(4)
   
-      permute(P4,pr).as_str
+      permute(P4,pr)
     end
 
     # input: a string of ascii characters
@@ -49,10 +49,10 @@ module SDES
       k1, k2 = SDES::Key.subkey(key)
       a = input.each_char.map do |c|
         bits = c[0].bin # convert to integer to bits
-        ip = permute(Initial, bits).as_str
+        ip = permute(Initial, bits)
         m1 = fk(ip, k1)
-        m2 = fk(flip(m1).as_str, k2) # m1 must be flipped???
-        fp = permute(Final, m2).as_str
+        m2 = fk(flip(m1), k2)
+        fp = permute(Final, m2)
         fp
       end
   
@@ -64,10 +64,10 @@ module SDES
     def self.decrypt(input, key)
       k1, k2 = SDES::Key.subkey(key)
       a = input.scan(/[01]{8}/).map do |byte|
-        fp = permute(Initial, byte).as_str
-        m2 = fk(fp, k2) # m1 must be flipped???
-        m1 = fk(flip(m2).as_str, k1)
-        ip = permute(Final, m1).as_str
+        fp = permute(Initial, byte)
+        m2 = fk(fp, k2)
+        m1 = fk(flip(m2), k1)
+        ip = permute(Final, m1)
         ip.dec.chr
       end
   
@@ -85,12 +85,11 @@ module SDES
     end
  
     def self.permute(mapping, values)
-      # raise "Sizes of mapping (#{mapping.length}) and values (#{values.length}) differ when they shouldn't." if mapping.length != values.length
-      mapping.collect { |index| values[index.to_i - 1] }
+      mapping.collect { |index| values[index.to_i - 1] }.as_str
     end
 
     def self.expand(mapping, values)
-      mapping.collect { |index| values[index.to_i - 1] }
+      mapping.collect { |index| values[index.to_i - 1] }.as_str
     end
 
     def self.substitute(input, mapping, size=4, &block)
