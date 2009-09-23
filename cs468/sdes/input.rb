@@ -15,6 +15,10 @@ module SDES
       self.content = line[6]
     end
   
+    def process!
+      encrypt or decrypt or raise "Could not encrypt or decrypt #{self.file_name}"
+    end
+  
     def encrypt?
       self.mode && self.mode.downcase == "e"
     end
@@ -24,13 +28,11 @@ module SDES
     end
   
     def encrypt
-      warn "Encrypting a file that specfied decryption." if decrypt?
-      SDES::Utility.encrypt(self.content, self.key)
+      encrypt? && SDES::Utility.encrypt(self.content, self.key)
     end
   
     def decrypt
-      warn "Decrypting a file that specfied encryption." if encrypt?
-      SDES::Utility.decrypt(self.content, self.key)
+      decrypt? && SDES::Utility.decrypt(self.content, self.key)
     end
   
   end
