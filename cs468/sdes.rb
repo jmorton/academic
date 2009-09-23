@@ -225,8 +225,8 @@ module SDES
       SDES::Utility.encrypt(self.content, self.key)
     end
     
-    def to_s
-      self.content
+    def decrypt
+      SDES::Utility.decrypt(self.content, self.key)
     end
     
   end
@@ -249,7 +249,8 @@ class Array
   
   # Converts an array elements into a string.  If the element is a fixnum
   # it will convert it into a string first.  This makes changing a permuted
-  # array back into an actual string
+  # array back into an actual string.  Even though to_s will accomplish this
+  # in some cases, this will not convert fixnums into chars.
   def as_str
     self.map do |i|
       if Fixnum === i
