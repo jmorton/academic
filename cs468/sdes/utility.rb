@@ -33,8 +33,7 @@ module SDES
     def self.f(bits, subkey)
       e = expand(SDES::EP, bits).base10
       r = (e ^ subkey.base10).bits
-      r1 = r[0..3]
-      r2 = r[4..7]
+      r1, r2 = r[0..3], r[4..7]
   
       s0 = select_from(SDES::S0, r1)
       s1 = select_from(SDES::S1, r2)
@@ -57,19 +56,18 @@ module SDES
       bytes.join
     end
 
-    # input: a string of ascii characters
-    # output: a binary number as a string
+    # input: a binary number as a string
+    # output: a string of ascii characters
     def self.decrypt(input, key)
-      k1, k2 = SDES::Key.subkey(key)
-      a = input.scan(/[01]{8}/).map do |byte|
-        fp = permute(Initial, byte)
-        m2 = fk(fp, k2)
-        m1 = fk(flip(m2), k1)
-        ip = permute(Final, m1)
-        ip.base10.chr
+      key_1, key_2 = SDES::Key.subkey(key)
+      
+      chars = input.scan(/[01]{8}/).map do |byte|
+        round_2 = fk(permute(Initial, byte), key_2)
+        round_1 = fk(flip(round_2), key_1)
+        permute(Final, round_1).base10.chr
       end
   
-      a.join
+      chars.join
     end
 
     def self.select_from(map, bits)

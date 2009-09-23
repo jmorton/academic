@@ -36,7 +36,7 @@ class String
   def bits
     self.each_char.map { |c| c[0].bits }.to_s
   end
-
+  
   # This very useful method exists in ruby 1.8.7+ and but if we're running
   # on 1.8.6 the program won't run at all.
   def each_char
