@@ -61,20 +61,10 @@ module SDES
       mapping.collect { |index| values[index.to_i - 1] }.as_str
     end
 
-    def self.substitute(input, mapping, size=4, &block)
-      row = SDES::Utility.binary_to_decimal(input[0].chr + input[3].chr).to_i
-      col = SDES::Utility.binary_to_decimal(input[1].chr + input[2].chr).to_i
-      if block_given?
-        yield(row,col)
-      else
-        mapping[(row*size + col).to_i].to_i
-      end
-    end
-
-    def self.select_two_bits_from(map, bits)
+    def self.select_two_bits_from(mapping, bits)
       row = (bits[0].chr + bits[3].chr).base10
       col = (bits[1].chr + bits[2].chr).base10
-      map[row*4+col].to_i.bits(2)
+      mapping[row*4+col].to_i.bits(2)
     end
   
     def self.flip(a)

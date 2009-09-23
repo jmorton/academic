@@ -165,49 +165,6 @@ describe 'Expansion' do
   end
 end
 
-describe 'Substitution' do
-  it 'should support substitution' do
-    SDES::Utility.should respond_to(:substitute)
-  end
-  
-  it 'should perform basic substitution' do
-    s0 = SDES::S0
-    s1 = SDES::S1
-    
-    SDES::Utility.substitute("0000",s0).should eql(1)
-    SDES::Utility.substitute("0001",s0).should eql(3)
-    SDES::Utility.substitute("1111",s0).should eql(2)
-    
-    SDES::Utility.substitute("0000",s1).should eql(0)
-    SDES::Utility.substitute("0001",s1).should eql(2)
-    SDES::Utility.substitute("1111",s1).should eql(3)
-  end
-  
-  it 'should calculate the row using the first and last char' do
-    # Testing the row/col values that should be generated and
-    # not the values that are in individual mappings.
-    s0 = SDES::S0
-    m1 = Proc.new { |row, column| [row, column] }
-    
-    SDES::Utility.substitute("0000",s0,&m1).should eql([0,0])
-    SDES::Utility.substitute("0001",s0,&m1).should eql([1,0])
-    SDES::Utility.substitute("0010",s0,&m1).should eql([0,1])
-    SDES::Utility.substitute("0011",s0,&m1).should eql([1,1])
-    SDES::Utility.substitute("0100",s0,&m1).should eql([0,2])
-    SDES::Utility.substitute("0101",s0,&m1).should eql([1,2])
-    SDES::Utility.substitute("0110",s0,&m1).should eql([0,3])
-    SDES::Utility.substitute("1000",s0,&m1).should eql([2,0])
-    SDES::Utility.substitute("1001",s0,&m1).should eql([3,0])
-    SDES::Utility.substitute("1010",s0,&m1).should eql([2,1])
-    SDES::Utility.substitute("1011",s0,&m1).should eql([3,1])
-    SDES::Utility.substitute("1100",s0,&m1).should eql([2,2])
-    SDES::Utility.substitute("1101",s0,&m1).should eql([3,2])
-    SDES::Utility.substitute("1110",s0,&m1).should eql([2,3])
-    SDES::Utility.substitute("1111",s0,&m1).should eql([3,3])
-  end
- 
-end
-
 describe 'Circular shifting' do
   
   it 'should rotate left correctly (with value of 1)' do
