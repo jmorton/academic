@@ -1,0 +1,16 @@
+Author: Jon Morton
+Date: 23-SEP-2009
+Descrition: A Ruby implementation of SDES for Fall 2009 GMU CS468
+
+Usage:
+
+-- Place plaintext, ciphertext, and a filelist containing
+   the names of individual files to process.
+
+-- From a command line, enter the command:
+   `rake process`
+
+Output:
+
+-- A list of the files created within the "input" directory
+   that were encrypted or decrypted.
