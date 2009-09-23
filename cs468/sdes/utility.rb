@@ -36,8 +36,8 @@ module SDES
       r1 = r[0..3]
       r2 = r[4..7]
   
-      s0 = select_from(SDES::S0, r1).to_i.bits(2)
-      s1 = select_from(SDES::S1, r2).to_i.bits(2)
+      s0 = select_from(SDES::S0, r1)
+      s1 = select_from(SDES::S1, r2)
       pr = (s0+s1).base10.bits(4)
   
       permute(P4,pr)
@@ -46,17 +46,15 @@ module SDES
     # input: a string of ascii characters
     # output: a binary number as a string
     def self.encrypt(input, key)
-      k1, k2 = SDES::Key.subkey(key)
-      a = input.each_char.map do |c|
-        bits = c[0].bits # convert to integer to bits
-        ip = permute(Initial, bits)
-        m1 = fk(ip, k1)
-        m2 = fk(flip(m1), k2)
-        fp = permute(Final, m2)
-        fp
+      key_1, key_2 = SDES::Key.subkey(key)
+      
+      bytes = input.each_char.map do |char|
+        round_1 = fk(permute(Initial, char.bits), key_1)
+        round_2 = fk(flip(round_1), key_2)
+        permute(Final, round_2)
       end
   
-      a.join
+      bytes.join
     end
 
     # input: a string of ascii characters
@@ -77,7 +75,7 @@ module SDES
     def self.select_from(map, bits)
       row = (bits[0].chr + bits[3].chr).base10
       col = (bits[1].chr + bits[2].chr).base10
-      map[row*4+col]
+      map[row*4+col].to_i.bits(2)
     end
   
     def self.flip(a)
