@@ -310,3 +310,14 @@ describe 'Array extensions' do
     ['a','b','c'].as_str.should eql("abc")
   end
 end
+
+describe 'String extensions' do
+  it 'should rely on SDES::Utility for .base10' do
+    SDES::Utility.should_receive(:binary_to_decimal).with("0101")
+    "0101".base10
+  end
+  
+  it 'should let each_char be called with a block' do
+    "abc".each_char.should_not be_false
+  end
+end
