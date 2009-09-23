@@ -1,9 +1,9 @@
 require 'sdes'
 
-describe 'Encryption' do
+describe 'Input of files for processing' do
   
   before(:each) do
-    @input = SDES::Input.new('plain-test.txt')
+    @input = SDES::Input.new('spec/plain-test.txt')
   end
   
   it 'should parse an encrypted file' do
@@ -40,6 +40,14 @@ describe 'Encryption' do
     @input.encrypt
   end
   
+end
+
+describe 'Input file for decryption processing' do
+
+  before(:each) do
+    @input = SDES::Input.new('spec/testcrypt-17.txt')
+  end
+
   it 'should support decrypting of the file' do
     @input.should respond_to(:decrypt)
   end
@@ -48,7 +56,6 @@ describe 'Encryption' do
     SDES::Utility.should_receive(:decrypt).with(@input.content, @input.key)
     @input.decrypt
   end
-  
 end
 
 describe 'Decryption' do
