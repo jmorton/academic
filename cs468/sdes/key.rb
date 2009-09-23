@@ -29,11 +29,11 @@ module SDES
     end
 
     def self._ls1(bits)
-      Utility::rotate_left(bits.dec,1,5).bin(5)
+      Utility::rotate_left(bits.base10,1,5).bits(5)
     end
 
     def self._ls3(bits)
-      Utility::rotate_left(bits.dec,3,5).bin(5)
+      Utility::rotate_left(bits.base10,3,5).bits(5)
     end
 
   end

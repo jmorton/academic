@@ -3,7 +3,7 @@ require 'sdes'
 describe 'Input of files for processing' do
   
   before(:each) do
-    @input = SDES::Input.new('spec/plain-test.txt')
+    @input = SDES::Input.new('spec/testplain-17.txt')
   end
   
   it 'should parse an encrypted file' do
@@ -58,6 +58,27 @@ describe 'Input file for decryption processing' do
   end
 end
 
+describe 'Deciding what to do with a file' do
+  it 'sholud try to decrypt a cipher text file' do
+    @f = SDES::Input.new('spec/testcrypt-17.txt')
+    @f.should_receive(:decrypt).and_return(true)
+    @f.process!
+  end
+
+  it 'should try to encrypt a plain text file' do
+    @f = SDES::Input.new('spec/testplain-17.txt')
+    @f.should_receive(:encrypt).and_return(true)
+    @f.process!
+  end
+  
+  it 'should raise an exception if encrypt and decrypt return false' do
+    @f = SDES::Input.new('sdes.rb')
+    lambda {
+      @f.process!
+    }.should raise_error
+  end
+end
+
 describe 'Decryption' do
   
   before(:each) do
@@ -86,17 +107,17 @@ end
 describe 'Binary/Decimal conversion' do
   
   it 'should convert decimal to binary' do
-    SDES::Utility.bin_to_dec("0").should eql(0)
-    SDES::Utility.bin_to_dec("1").should eql(1)
-    SDES::Utility.bin_to_dec("10").should eql(2)
+    SDES::Utility.binary_to_decimal("0").should eql(0)
+    SDES::Utility.binary_to_decimal("1").should eql(1)
+    SDES::Utility.binary_to_decimal("10").should eql(2)
   end
   
   it 'should convert binary to decimal' do
-    0.bin(4).should eql("0000")
-    1.bin(4).should eql("0001")
-    2.bin(4).should eql("0010")
-    4.bin(4).should eql("0100")
-    8.bin(4).should eql("1000")
+    0.bits(4).should eql("0000")
+    1.bits(4).should eql("0001")
+    2.bits(4).should eql("0010")
+    4.bits(4).should eql("0100")
+    8.bits(4).should eql("1000")
   end
 end
 
@@ -212,9 +233,9 @@ describe 'Circular shifting' do
   end
   
   it 'should rotate a five bit number correctly' do
-    x = SDES::Utility.bin_to_dec("1100")
+    x = SDES::Utility.binary_to_decimal("1100")
     y = SDES::Utility.rotate_left(x,2,4)
-    z = SDES::Utility.dec_to_bin(y)
+    z = SDES::Utility.decimal_to_binary(y)
     z.should eql("11")
   end
   
