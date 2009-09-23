@@ -176,16 +176,16 @@ describe 'Permutation' do
 end
 
 describe 'Expansion' do
-  it 'should support expansion' do
-    SDES::Utility.should respond_to(:expand)
+  it 'should support expansion using permute' do
+    SDES::Utility.should respond_to(:permute)
   end
   
-  it 'should perform basic expansion' do
+  it 'should perform basic expansion using permute' do
     table  = %w(4 1 2 3 4 1)
     result = %q(dabcda)
     values = %q(abcd)
     
-    SDES::Utility.expand(table, values).should eql(result)
+    SDES::Utility.permute(table, values).should eql(result)
   end
 end
 
