@@ -1,10 +1,9 @@
 module SDES
   class Input < Struct.new(:file_name, :student_name, :key, :content, :mode)
-    include SDES::Utility
-    include SDES::Key
   
     def initialize(path)
-      # we skip lines 4 and 5 on purpose
+      # we skip lines 4 and 5 on purpose because this implementation
+      # does not need to support any streaming ciphers
       f = open(path)
       line = f.readlines
       f.close

@@ -103,7 +103,7 @@ end
 describe 'Flip' do
   
   it 'Basic flipping works' do
-    SDES::Utility.flip([1,2,3,4,5,6,7,8]).should eql([5,6,7,8,1,2,3,4])
+    SDES::Utility.flip(%q(12345678)).should eql(%q(56781234))
   end
   
 end
@@ -116,14 +116,14 @@ describe 'Permutation' do
   
   it 'should perform basic permutation' do
     map = %w(3 2 1)
-    values = %w(a b c)
+    values = "abc"
     
     SDES::Utility.permute(map, values).should eql(values.reverse)
   end
   
   it 'should work when applying S-SDES initial and final permutation' do
-    before_p =%w(a b c d e f g h)
-    after_p  =%w(b f c a d h e g)
+    before_p =%q(abcdefgh)
+    after_p  =%q(bfcadheg)
     SDES::Utility.permute(SDES::Initial, before_p).should eql(after_p)
     SDES::Utility.permute(SDES::Final, after_p).should eql(before_p)
   end
@@ -137,8 +137,8 @@ describe 'Expansion' do
   
   it 'should perform basic expansion' do
     table  = %w(4 1 2 3 4 1)
-    result = %w(d a b c d a)
-    values = %w(a b c d)
+    result = %q(dabcda)
+    values = %q(abcd)
     
     SDES::Utility.expand(table, values).should eql(result)
   end

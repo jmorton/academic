@@ -18,7 +18,6 @@
 # the code far more expressive and readable.
 #
 
-
 require 'sdes/tables'
 require 'sdes/key'
 require 'sdes/utility'
