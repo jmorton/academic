@@ -21,5 +21,5 @@
 require 'sdes/tables'
 require 'sdes/key'
 require 'sdes/utility'
-require 'sdes/input'
+require 'sdes/io'
 require 'sdes/extensions'

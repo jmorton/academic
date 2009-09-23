@@ -3,7 +3,7 @@ require 'sdes'
 describe 'Input of files for processing' do
   
   before(:each) do
-    @input = SDES::Input.new('spec/testplain-17.txt')
+    @input = SDES::IO.new('spec/plain-17.txt')
   end
   
   it 'should parse an encrypted file' do
@@ -11,7 +11,7 @@ describe 'Input of files for processing' do
   end
   
   it 'should have the file name' do
-    @input.file_name.should eql("plain-test.txt")
+    @input.file_name.should eql("plain-17.txt")
   end
   
   it 'should have the student name' do
@@ -45,7 +45,7 @@ end
 describe 'Input file for decryption processing' do
 
   before(:each) do
-    @input = SDES::Input.new('spec/testcrypt-17.txt')
+    @input = SDES::IO.new('spec/crypt-17.txt')
   end
 
   it 'should support decrypting of the file' do
@@ -58,24 +58,41 @@ describe 'Input file for decryption processing' do
   end
 end
 
-describe 'Deciding what to do with a file' do
-  it 'sholud try to decrypt a cipher text file' do
-    @f = SDES::Input.new('spec/testcrypt-17.txt')
-    @f.should_receive(:decrypt).and_return(true)
+describe 'Input and output of files' do
+
+  it 'should rename plain-n.txt to crypt-n.txt' do
+    @f = SDES::IO.new("spec/plain-17.txt")
+    @f.output_path.should eql('crypt-17.txt')
+  end
+
+  it 'should rename crypt-n.txt to plain-n.txt' do
+    @f = SDES::IO.new("spec/crypt-17.txt")
+    @f.output_path.should eql('plain-17.txt')
+  end
+
+  it 'should be able to output a file' do
+    @f = SDES::IO.new("spec/crypt-17.txt")
     @f.process!
   end
 
-  it 'should try to encrypt a plain text file' do
-    @f = SDES::Input.new('spec/testplain-17.txt')
-    @f.should_receive(:encrypt).and_return(true)
+  it 'should be able to write to another file' do
+    @f = SDES::IO.new("spec/plain-17.txt")
     @f.process!
   end
-  
+
   it 'should raise an exception if encrypt and decrypt return false' do
-    @f = SDES::Input.new('sdes.rb')
+    @f = SDES::IO.new('sdes.rb')
     lambda {
       @f.process!
     }.should raise_error
+  end
+
+end
+
+describe 'Parsing files' do
+  it 'should consult a filelist' do
+    SDES::IO.process('spec/cs468-filelist.txt')
+    SDES::IO.should_receive(:new).with('plain-1.txt')
   end
 end
 
@@ -184,11 +201,6 @@ describe 'Circular shifting' do
     SDES::Utility.rotate_left(63,  2).should eql(255-3)
   end
   
-  it 'should rotate right correctly' do
-    SDES::Utility.rotate_right(2,1).should eql(1)
-    SDES::Utility.rotate_right(255,1).should eql(255)
-  end
-  
   it 'should rotate a five bit number correctly' do
     x = SDES::Utility.binary_to_decimal("1100")
     y = SDES::Utility.rotate_left(x,2,4)
@@ -221,6 +233,12 @@ describe 'Mangling (f function)' do
     b = "0000"
     k = "11001010"
     SDES::Utility.f(b,k).should eql("1000")
+  end
+
+  it 'should f' do
+    b = "0000"
+    k = "10100011"
+    SDES::Utility.f(b,k).should eql("0001")
   end
 
 end

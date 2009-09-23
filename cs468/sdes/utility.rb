@@ -85,11 +85,5 @@ module SDES
       ((x<<shift) | (x >> (max_size -shift))) & max_value
     end
 
-    def self.rotate_right(x, shift, max_size = 7)
-      shift &= max_size
-      max_value = (2 ** (max_size +1)) -1
-      ((x << (max_size +1 -shift)) | (x>>shift)) & max_value
-    end
-
   end
 end

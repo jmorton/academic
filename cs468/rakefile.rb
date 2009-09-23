@@ -1,3 +1,4 @@
+require 'sdes'
 require 'rake'
 require 'spec/rake/spectask'
 
@@ -7,4 +8,10 @@ Spec::Rake::SpecTask.new('rr') do |t|
   t.rcov = true
   t.rcov_opts = ['--include', 'sdes.rb',
                  '--exclude','spec/*_spec.rb']
+end
+
+desc "Decrypt the files in the current directory"
+task :process do |t|
+  output = SDES::IO.process("cs468-filelist.txt")
+  output.each { |path| puts "Created #{path}" }
 end
