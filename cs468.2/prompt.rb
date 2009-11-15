@@ -4,10 +4,6 @@ require "kernel"
 
 include Cap
 
-@h = HighLine.new
-@k = Cap::Kernel.new
-
-
 def list(*subjects)
   subjects.each do |s|
     puts(s)
@@ -24,6 +20,8 @@ o1 = Cap::Object.new("file")
 o2 = Cap::Object.new("printer")
 o3 = Cap::Object.new("phone")
   
+@k = Cap::Kernel.new
+
 c1 = @k.grant(s1,o1)
 c2 = @k.grant(s2,o2)
 c3 = @k.grant(s3,o3)
