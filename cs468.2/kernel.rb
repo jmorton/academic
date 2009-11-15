@@ -21,6 +21,7 @@ module Cap
     Confidential = 1
     Secret       = 2
     TopSecret    = 3
+    Names = { Confidential => "Confidential", Secret => "Secret", TopSecret => "TopSecret" }
   end
   
   # Each right is a bit in a mask, therefore RW = 3
@@ -31,16 +32,46 @@ module Cap
   end
   
   class Object
+    attr_accessor :name
     attr :clearance
-    def initialize(clearance=Clearance::Confidential)
+
+    def initialize(name, clearance=Clearance::Confidential)
+      @name = name
       @clearance = clearance
+    end
+    
+    def to_s
+      "<Object name=#{name}, clearance=#{Clearance::Names[clearance]}>"
     end
   end
   
   class Subject
+    attr_accessor :name
     attr :clearance
-    def initialize(clearance=Clearance::Confidential)
+    
+    def initialize(name, clearance=Clearance::Confidential)
+      @name = name
       @clearance = clearance
+      @capabilities = Array.new
+    end
+    
+    def give(capability)
+      @capabilities << capability
+    end
+    
+    def replace(capability)
+      # Remove any existing capability for the same object
+      @capabilities.reject { |c| c.object == capability.object }
+      # Add the new capability to the set
+      give(capability)
+    end
+    
+    def capabilities
+      @capabilities
+    end
+    
+    def to_s
+      "<Subject name=#{name}, clearance=#{Clearance::Names[clearance]}>"
     end
   end
   
@@ -72,7 +103,13 @@ module Cap
       validate(rights)
       
       # Build a new capability for the subject.
-      Capability.new(subject, self.object, rights, self.token)
+      derived_capability = Capability.new(subject, self.object, rights, self.token)
+      
+      # Add the capability to the subject's set of capabilities
+      subject.give(derived_capability)
+      
+      # Return the generated capability for convenience
+      derived_capability
     end
     
     # Raises a PrivelegeError if the rights argument exceeds the rights
@@ -81,11 +118,19 @@ module Cap
       raise PrivelegeError.new if rights != (self.right & rights)
     end
     
+    def to_s
+      "<Capability rights: #{self.right}, token: #{token}, #{object.to_s}"
+    end
+    
+    def to_str
+      to_s
+    end
+    
     # Identical to Kernel::Signature – implemented here to avoid the appearance
     # that Capability collaborates with Kernel when generating derivative
     # capabilities.
     def self.sign(subject, object, right, salt = nil)
-      Digest::SHA1.hexdigest("#{subject.hash}+#{object.hash}+#{right}+#{salt}")[0..7]
+      Digest::SHA1.hexdigest("#{subject.hash}+#{object.hash}+#{right}+#{salt}")[0..15]
     end
   end
   
@@ -106,6 +151,7 @@ module Cap
     def grant(subject, object, right=Right::RW)
       capability = Capability.new(subject, object, right, @seed)
       object_map[object] = [capability, subject]
+      subject.give(capability)
       capability
     end
     
@@ -152,7 +198,7 @@ module Cap
     
     # 
     def self.signature(subject, object, right, salt = nil)
-      Digest::SHA1.hexdigest("#{subject.hash}+#{object.hash}+#{right}+#{salt}")[0..7]
+      Digest::SHA1.hexdigest("#{subject.hash}+#{object.hash}+#{right}+#{salt}")[0..15]
     end
     
   end
