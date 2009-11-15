@@ -29,6 +29,7 @@ module Cap
     R = 1
     W = 2
     RW = 3 # 01 + 10 = 11 = 3
+    Names = { R => "Read", W => "Write", RW => "Read/Write" }
   end
   
   class Object
@@ -71,7 +72,9 @@ module Cap
     end
     
     def to_s
-      "<Subject name=#{name}, clearance=#{Clearance::Names[clearance]}>"
+      "<Subject name=#{name}, clearance=#{Clearance::Names[clearance]}>\n" +
+      @capabilities.map { |c| c.to_s }.join("\n") +
+      "\n</Subject>"
     end
   end
   
@@ -119,7 +122,7 @@ module Cap
     end
     
     def to_s
-      "<Capability rights: #{self.right}, token: #{token}, #{object.to_s}"
+      "<Capability rights: #{Right::Names[right]}, token: #{token}, #{object.to_s}"
     end
     
     def to_str
