@@ -1,13 +1,19 @@
+require "environment"
 require "digest/sha1"
 
 module Cap
   
+  # Used to raise a more informative error when verifying a
+  # subject's ability to perform an operation on an object
   class ClearanceError < Exception
     def initialize(subject, object)
       super("#{subject.clearance} is less than #{object.clearance}")
     end
   end
   
+  # Used to raise a more informative error when attempting to
+  # transfer a capability with more privelege than allowed
+  # the owner possesses.
   class PrivelegeError < Exception
   end
   
@@ -49,7 +55,10 @@ module Cap
     def initialize(subject, object, rights, salt=nil)
       @object = object
       @right = rights
-      @token = Cap::Kernel.signature(subject, object, rights, salt)
+      
+      # Calling a class method instead of an instance method.  The actual
+      # kernel has no involvement in the 
+      @token = Capability.sign(subject, object, rights, salt)
     end
     
     # Creates a new capability.  Note, this function does not enforce
@@ -58,16 +67,25 @@ module Cap
     # what was given within this capability.  If the subject requests
     # rights that exceed what is allowed for, then an exception is
     # raised.
-    #
     def transfer(subject, rights)
-      # By using a bitwise AND we can ensure that requestsed rights
-      # never exceed the rights for the ticket.
-      if rights != (self.right & rights)
-        raise PrivelegeError.new
-      end
+      # Ensure the requestsed rights never exceed the rights for the ticket.
+      validate(rights)
       
       # Build a new capability for the subject.
-      return Capability.new(subject, object, rights, token)
+      Capability.new(subject, self.object, rights, self.token)
+    end
+    
+    # Raises a PrivelegeError if the rights argument exceeds the rights
+    # of the token.
+    def validate(rights)
+      raise PrivelegeError.new if rights != (self.right & rights)
+    end
+    
+    # Identical to Kernel::Signature – implemented here to avoid the appearance
+    # that Capability collaborates with Kernel when generating derivative
+    # capabilities.
+    def self.sign(subject, object, right, salt = nil)
+      Digest::SHA1.hexdigest("#{subject.hash}+#{object.hash}+#{right}+#{salt}")[0..7]
     end
   end
   
@@ -80,12 +98,12 @@ module Cap
     def object_map
       @object_mapping ||= Hash.new
     end
-        
+    
     # Creates a new capability and adds a mapping between the object and 
     # the subject that can be used later to verify capabilities.  In this
     # system an object has exactly one owner.  This is a design decision
     # and not an oversight.
-    def grant(subject, object, right)
+    def grant(subject, object, right=Right::RW)
       capability = Capability.new(subject, object, right, @seed)
       object_map[object] = [capability, subject]
       capability
@@ -119,11 +137,12 @@ module Cap
       return true if original_capability == alleged_capability and supplicant == owner
 
       # At this point, we must determine if the alleged_capability was derived
-      # from the original_capability.
+      # from the original_capability.  If the rights have been tampered with or
+      # the capability was not issued to the supplicant then token will not match
       return true if alleged_capability.token == original_capability.transfer(supplicant, alleged_capability.right).token
       
       # If there was no success by now, we could not verify the alleged_capability
-      return false
+      false
     end
     
     def self.cleared(c1, c2)
@@ -139,17 +158,3 @@ module Cap
   end
 
 end
-
-include Cap
-
-k = Cap::Kernel.new
-
-s1 = Cap::Subject.new(Clearance::Secret)
-s2 = Cap::Subject.new(Clearance::TopSecret)
-
-o1 = Cap::Object.new(Clearance::TopSecret)
-
-c1 = k.grant(s1, o1, Right::RW)
-c2 = c1.transfer(s2,Right::R)
-
-puts k.verify(s2,c2)
