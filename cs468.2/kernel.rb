@@ -199,9 +199,9 @@ module Cap
       false
     end
     
+    # Is C1 cleared to for C2?
     def self.cleared(c1, c2)
-      raise ClearanceError.new(c1,c2) if c1.clearance < c2.clearance
-      true
+      c1.clearance >= c2.clearance
     end
     
     # 

@@ -12,13 +12,13 @@ end
 
 # Initial setup
 
-s1 = Subject.new("red")
-s2 = Subject.new("blue")
-s3 = Subject.new("green")
+s1 = Subject.new("red", Clearance::TopSecret)
+s2 = Subject.new("blue", Clearance::TopSecret)
+s3 = Subject.new("green", Clearance::Confidential)
 
-o1 = Cap::Object.new("file")
-o2 = Cap::Object.new("printer")
-o3 = Cap::Object.new("phone")
+o1 = Cap::Object.new("file", Clearance::TopSecret)
+o2 = Cap::Object.new("printer", Clearance::Secret)
+o3 = Cap::Object.new("phone", Clearance::Confidential)
   
 @k = Cap::Kernel.new
 
@@ -57,47 +57,51 @@ loop do
     end
     
     m.choice(:transfer) do |command, details|
-      transfer_pattern = /(\w+) (\w+) (\w+) ([RW]+)/
+      begin
+        transfer_pattern = /(\w+) (\w+) (\w+) ([RW]+)/
       
-      # Assigns each match to a variable – nice short hand.
-      owner_id, recipient_id, object_id, rights_id = details.scan(transfer_pattern).first
+        # Assigns each match to a variable – nice short hand.
+        owner_id, recipient_id, object_id, rights_id = details.scan(transfer_pattern).first
       
-      if owner_id.nil?
+        owner = @users[owner_id]
+        recipient = @users[recipient_id]
+        capability = owner.capability_by_object_name(object_id)
+        rights = eval("Right::#{rights_id.upcase}")
+      
+        if owner.nil?
+          say "no subject named '#{owner_id}' exists"
+        elsif recipient.nil?
+          say "no subject named '#{recipient_id}' exists"
+        elsif capability.nil?
+          say "no capability for object named '#{object_id}' given to #{owner_id}"
+        elsif rights.nil?
+          say "could not understand right given by #{rights_id}"
+        else
+          capability.transfer(recipient, rights)
+        end
+      rescue
         say("try this instead: 'transfer <owner> <recipient> <object> <rights>")
-      end
-      
-      owner = @users[owner_id]
-      recipient = @users[recipient_id]
-      capability = owner.capability_by_object_name(object_id)
-      rights = eval("Right::#{rights_id.upcase}")
-      
-      if owner.nil?
-        say "no subject named '#{owner_id}' exists"
-      elsif recipient.nil?
-        say "no subject named '#{recipient_id}' exists"
-      elsif capability.nil?
-        say "no capability for object named '#{object_id}' given to #{owner_id}"
-      elsif rights.nil?
-        say "could not understand right given by #{rights_id}"
-      else
-        capability.transfer(recipient, rights)
       end
     end
     
     m.choice(:valid) do |command, details|
-      valid_pattern = /(\w+) (\w+)/
+      begin
+        valid_pattern = /(\w+) (\w+)/
       
-      subject_id, object_id = details.scan(valid_pattern).first
+        subject_id, object_id = details.scan(valid_pattern).first
       
-      subject = @users[subject_id]
-      capability = subject.capability_by_object_name(object_id)
+        subject = @users[subject_id]
+        capability = subject.capability_by_object_name(object_id)
       
-      if subject.nil?
-        say "nobody named '#{subject_id}' exists"
-      elsif capability.nil?
-        say "#{subject_id} does not have a capability token for the object '#{object_id}'"
-      else
-        say "Valid? #{@k.verify(subject, capability)}"
+        if subject.nil?
+          say "nobody named '#{subject_id}' exists"
+        elsif capability.nil?
+          say "#{subject_id} does not have a capability token for the object '#{object_id}'"
+        else
+          say "#{@k.verify(subject, capability)}"
+        end
+      rescue
+        say "False (an error occurred)."
       end
     end
     
