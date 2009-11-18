@@ -67,6 +67,11 @@ module Cap
       give(capability)
     end
     
+    # Retrieves the capability that corresponds to the named object.
+    def capability_by_object_name(object_name)
+      @capabilities.select { |c| c.object.name == object_name }.first
+    end
+    
     def capabilities
       @capabilities
     end

@@ -27,22 +27,16 @@ c2 = @k.grant(s2,o2)
 c3 = @k.grant(s3,o3)
 
 @users = {
-  :red => s1,
-  :blue => s2,
-  :green => s3
+  "red" => s1,
+  "blue" => s2,
+  "green" => s3
 }
 
 @objects = {
-  :file => o1,
-  :phone => o3,
-  :printer => o2
+  "file" => o1,
+  "phone" => o3,
+  "printer" => o2
 }
-
-t1 = c1.transfer(s2,Right::R)
-
-# list(s1, s2, s3)
-
-# @h.say "#{@k.verify(s2,t1)}"
 
 loop do
   choose do |m|
@@ -63,15 +57,48 @@ loop do
     end
     
     m.choice(:transfer) do |command, details|
-    # owner, new owner, cap
-    # transfer red blue 
+      transfer_pattern = /(\w+) (\w+) (\w+) ([RW]+)/
+      
+      # Assigns each match to a variable – nice short hand.
+      owner_id, recipient_id, object_id, rights_id = details.scan(transfer_pattern).first
+      
+      if owner_id.nil?
+        say("try this instead: 'transfer <owner> <recipient> <object> <rights>")
+      end
+      
+      owner = @users[owner_id]
+      recipient = @users[recipient_id]
+      capability = owner.capability_by_object_name(object_id)
+      rights = eval("Right::#{rights_id.upcase}")
+      
+      if owner.nil?
+        say "no subject named '#{owner_id}' exists"
+      elsif recipient.nil?
+        say "no subject named '#{recipient_id}' exists"
+      elsif capability.nil?
+        say "no capability for object named '#{object_id}' given to #{owner_id}"
+      elsif rights.nil?
+        say "could not understand right given by #{rights_id}"
+      else
+        capability.transfer(recipient, rights)
+      end
     end
     
-    m.choice(:modify) do |command, details|
-    # changes a capability
-    end
-    
-    m.choice(:verify) do |command, details|
+    m.choice(:valid) do |command, details|
+      valid_pattern = /(\w+) (\w+)/
+      
+      subject_id, object_id = details.scan(valid_pattern).first
+      
+      subject = @users[subject_id]
+      capability = subject.capability_by_object_name(object_id)
+      
+      if subject.nil?
+        say "nobody named '#{subject_id}' exists"
+      elsif capability.nil?
+        say "#{subject_id} does not have a capability token for the object '#{object_id}'"
+      else
+        say "Valid? #{@k.verify(subject, capability)}"
+      end
     end
     
     m.choice(:exit) { exit }
