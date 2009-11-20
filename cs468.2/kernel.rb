@@ -53,23 +53,20 @@ module Cap
     def initialize(name, clearance=Clearance::Confidential)
       @name = name
       @clearance = clearance
-      @capabilities = Array.new
+      @capabilities = {}
     end
     
     def give(capability)
-      @capabilities << capability
+      @capabilities[capability.object.name] = capability
     end
     
     def replace(capability)
-      # Remove any existing capability for the same object
-      @capabilities.reject { |c| c.object == capability.object }
-      # Add the new capability to the set
       give(capability)
     end
     
     # Retrieves the capability that corresponds to the named object.
     def capability_by_object_name(object_name)
-      @capabilities.select { |c| c.object.name == object_name }.first
+      @capabilities[object_name]
     end
     
     def capabilities
@@ -78,15 +75,15 @@ module Cap
     
     def to_s
       "<Subject name=#{name}, clearance=#{Clearance::Names[clearance]}>\n" +
-      @capabilities.map { |c| c.to_s }.join("\n") +
+      @capabilities.values { |c| c.to_s }.join("\n") +
       "\n</Subject>"
     end
   end
   
   class Capability
     attr :token
-    attr :right
     attr :object
+    attr :right
 
     # The subject is not an attribute, but is still used to generate
     # the token so that a capability for the same object/rights will
@@ -126,8 +123,13 @@ module Cap
       raise PrivelegeError.new if rights != (self.right & rights)
     end
     
+    # Right is a string R, W, or RW
+    def right=(r)
+      @right = eval("Right::#{r.upcase}")
+    end
+    
     def to_s
-      "<Capability rights: #{Right::Names[right]}, token: #{token}, #{object.to_s}"
+      "<Capability rights: #{Right::Names[@right]}, token: #{token}, #{object.to_s}"
     end
     
     def to_str

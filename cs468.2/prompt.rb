@@ -4,40 +4,35 @@ require "kernel"
 
 include Cap
 
-def list(*subjects)
-  subjects.each do |s|
-    puts(s)
-  end
-end
-
 # Initial setup
 
-s1 = Subject.new("red", Clearance::TopSecret)
-s2 = Subject.new("blue", Clearance::TopSecret)
-s3 = Subject.new("green", Clearance::Confidential)
+s =[ Subject.new("red", Clearance::TopSecret),
+     Subject.new("purple", Clearance::Secret),
+     Subject.new("green", Clearance::Secret),
+     Subject.new("gold", Clearance::Confidential),
+     Subject.new("blue", Clearance::TopSecret),
+     Subject.new("yellow", Clearance::TopSecret) ]
 
-o1 = Cap::Object.new("file", Clearance::TopSecret)
-o2 = Cap::Object.new("printer", Clearance::Secret)
-o3 = Cap::Object.new("phone", Clearance::Confidential)
-  
+o = [ Cap::Object.new("printer_red", Clearance::TopSecret),
+      Cap::Object.new("printer_purple", Clearance::Secret),
+      Cap::Object.new("network_card_green", Clearance::Secret),
+      Cap::Object.new("network_card_gold", Clearance::Confidential),
+      Cap::Object.new("disk_blue", Clearance::TopSecret),
+      Cap::Object.new("disk_yellow", Clearance::TopSecret) ]
+
+# Initialize the kernel with default subjects/objects
+
 @k = Cap::Kernel.new
 
-c1 = @k.grant(s1,o1)
-c2 = @k.grant(s2,o2)
-c3 = @k.grant(s3,o3)
+@users = {}
+@objects = {}
 
-@users = {
-  "red" => s1,
-  "blue" => s2,
-  "green" => s3
-}
-
-@objects = {
-  "file" => o1,
-  "phone" => o3,
-  "printer" => o2
-}
-
+s.zip(o).each do |subject, object|
+  @k.grant(subject, object)
+  @users[subject.name] = subject
+  @objects[object.name] = object
+end
+    
 loop do
   choose do |m|
     m.shell  = true
@@ -45,12 +40,14 @@ loop do
     m.prompt = "What do you want to do? "
     
     m.choice(:all, "list all subjects and capabilities") do |command, details|
-      list(@users.values)
+      @users.values.each do |s|
+        puts(s)
+      end
     end
     
     m.choice(:list, "list a specific subject's capabilities") do |command, details|
       begin
-        list(@users[details.to_sym])
+        puts @users[details]
       rescue
         "no user with ID of '#{details}' found."
       end
@@ -77,10 +74,29 @@ loop do
         elsif rights.nil?
           say "could not understand right given by #{rights_id}"
         else
-          capability.transfer(recipient, rights)
+          c = capability.transfer(recipient, rights)
+          say "Ok: #{c}"
         end
       rescue
         say("try this instead: 'transfer <owner> <recipient> <object> <rights>")
+      end
+    end
+    
+    m.choice(:modify) do |command, details|
+      modify_pattern = /([RW]+) (\w+) (\w+)/
+            
+      rights_id, subject_id, object_id = details.scan(modify_pattern).first
+
+      begin
+        subject = @users[subject_id]
+        capability = subject.capabilities[object_id]
+        capability.right = rights_id
+        say("Capability modified – it should no longer be valid.")
+        say("valid #{subject_id} #{object_id}: #{@k.verify(subject, capability)}")
+      rescue Exception => e
+        say e
+        say("try this instead: 'modify <rights> <subject> <object>")
+        say("subject = #{subject_id}")
       end
     end
     
@@ -91,7 +107,7 @@ loop do
         subject_id, object_id = details.scan(valid_pattern).first
       
         subject = @users[subject_id]
-        capability = subject.capability_by_object_name(object_id)
+        capability = subject.capabilities[object_id]
       
         if subject.nil?
           say "nobody named '#{subject_id}' exists"
