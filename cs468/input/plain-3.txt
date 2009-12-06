@@ -1,0 +1,7 @@
+plain-3.txt
+Jon Morton
+E
+10011001
+ECB
+00000000
+“When we talk about a spider spinning silk, we’re talking about how the spider applies forces to produce a physical transformation from liquid to solid,” said spider silk expert Todd Blackledge of the University of Akron, who was not involved in creating the textile. “Scientists simply can’t replicate that as well as a spider does it. Every year we’re getting closer and closer to being able to mass-produce it, but we’re not there yet.”

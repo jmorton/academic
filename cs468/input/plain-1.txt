@@ -1,0 +1,7 @@
+plain-1.txt
+Name of Student
+E
+1100100001
+ECB
+00000000
+Technology is a way of organizing the universe so that man doesn't have to experience it.

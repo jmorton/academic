@@ -1,0 +1,118 @@
+Author: Jon Morton
+
+= Description
+
+This is a ruby implementation of a capability based token system.  It assumes that the users
+will keep their tokens secret.  In one sense, the tokens are secrets shared between the
+kernel and the original owners.  Subsequent tokens are secrets shared between owners and
+only given to the kernel when attempting to access a resource.
+
+More details about the implementation follow the usage instructions.
+
+
+= Running the System:
+
+ruby prompt.rb
+
+You will be repeatedly prompted for choices until you type 'exit' and press the enter key.
+
+The following commands are used to interact with the system and generate new capabilities.
+
+
+==  All
+
+    all – displays a list of all subjects and the capabilities they have been granted.
+
+
+==  List
+
+    usage: list <subject_name>
+
+    example:
+      list blue
+
+    output:
+      <Subject name=blue, clearance=TopSecret>
+      <Capability rights: Read/Write, token: 3f1d54d72ba003e8>
+      <Object name=disk_blue, clearance=TopSecret>
+      </Capability>
+      </Subject>
+
+  
+==  Transfer
+
+    usage: transfer <owner_name> <recipient_name> <object_name> [R|W|RW]
+
+    !!! Don't forget to specify the rights at the end  !!! 
+
+    example:
+    transfer blue purple disk_blue RW
+
+    output:
+    <Capability rights: Read/Write, token: 18b6cedd0282d793>
+    <Object name=disk_blue, clearance=TopSecret>
+    </Capability>
+
+
+==  Modify
+
+    usage: modify [R|W|RW] purple disk_blue
+
+    example:
+    modify W purple disk_blue
+
+    output:
+    Capability modified – it should no longer be valid.
+
+    !!! Don't forget to specify the rights first !!!
+
+    It is possible to modify rights back to the original state of permissions
+    and have a valid capability token.  Invoke the 'valid' command to confirm
+    your expectations.
+
+
+==  Valid
+
+    usage: valid <subject_name> <object_name>
+    
+    Note: the system will find the capability token for the subject using the
+          object name provided.  This looks at data stored in a user object and
+          not in the kernel.
+          
+    example 1: valid purple disk_yellow
+    output: purple does not have a capability token for the object 'disk_yellow'
+    
+    example 2: valid purple printer_purple
+    output: true
+    
+= Implementation Details:
+
+The system is composed of an instance of Kernel along with several subjects,
+objects and capabilities.  When the system is started, it grants capabilities to
+a set of original owners and objects.  The kernel only remembers these original
+capabilities.  When subsequent capabilities are created using the transfer command,
+only the subject they were given to maintains a reference of what was generated.
+
+When a subject presents a capability to the kernel, the kernel confirms the integrity
+of the token in two steps.  First, it determines if this is a ticket that it issued
+on initialization.  It also verifies that the supplicant and original owner match.
+
+If the first check fails, it attempts to generate the ticket that it would expect the
+original owner to issue to the supplicant.  It does this by hashing the combined subject's
+name, given object's name, and rights with the token it originally generated.  If the
+alleged ticket matches the kernel's expected ticket, then it is presumed to be valid.
+For this reason, it is only possible for the original owner to grant capabilities: nobody
+else should know the value of the token they were given by the kernel.  This also
+prevents subjects that weren't the original owner from issuing subsequent valid tickets.
+
+The kernel also enforces clearance levels – the implementation is trivial.  Even though it
+is possible to grant a capability to someone without the necessary clearance, the kernel
+will not accept it as a valid ticket.
+
+The system prevents commands that would result in the creation of capabilities that exceed
+the permission of the original capability.  For example, if an owner may only read and
+object, they are unable to grant capabilities with anything other than read permission.
+
+The hashing algorithm uses the built-in SHA2 but truncates the token down to meet the
+project requirements.  I would never truncate hashes used for message authenticity in
+the real world.

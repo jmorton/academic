@@ -13,9 +13,14 @@
 # as class variables in sdes/tables.rb.
 # 3. I've "monkey-patched" String, Fixnum, and Array.  Usually, this practice
 # is discouraged unless you really know what you're doing (which I do) and
-# this code wolud not be used in a large scale system anyhow.  Therefore, even
+# this code would not be used in a large scale system anyhow.  Therefore, even
 # though adding to the standard classes can make things complicated it does make
 # the code far more expressive and readable.
+#
+# = References
+# I did not read any other libraries to get ideas about how to implement this.
+# I did seek out bit twiddling code for the circular shift operation. I did
+# not use the code seen on http://en.wikipedia.org/wiki/Circular_shift verbatim.
 #
 
 require 'sdes/tables'

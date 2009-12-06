@@ -1,0 +1,5 @@
+commands:
+
+openssl enc -aes-256-cbc -pass pass:test -in test.txt -out test.enc
+
+openssl enc -d -aes-256-cbc -in test.enc -out test_out.txt

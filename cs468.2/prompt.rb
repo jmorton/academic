@@ -38,14 +38,21 @@ loop do
     m.shell  = true
     m.header = "Capability Manager"
     m.prompt = "What do you want to do? "
-    
-    m.choice(:all, "list all subjects and capabilities") do |command, details|
+        
+    m.choice(:all) do |command, details|
       @users.values.each do |s|
         puts(s)
       end
     end
     
-    m.choice(:list, "list a specific subject's capabilities") do |command, details|
+    list_help = <<-eos
+Display a subject's capabilities, they are not necessarily valid.
+usage: list subject_name
+example: list blue
+
+eos
+    
+    m.choice(:list, list_help) do |command, details|
       begin
         puts @users[details]
       rescue
@@ -53,7 +60,7 @@ loop do
       end
     end
     
-    m.choice(:transfer) do |command, details|
+    m.choice(:transfer, "transfer <owner_id> <recipient_id> <object_id> [R/W/RW]") do |command, details|
       begin
         transfer_pattern = /(\w+) (\w+) (\w+) ([RW]+)/
       
@@ -75,14 +82,14 @@ loop do
           say "could not understand right given by #{rights_id}"
         else
           c = capability.transfer(recipient, rights)
-          say "Ok: #{c}"
+          say c
         end
       rescue
         say("try this instead: 'transfer <owner> <recipient> <object> <rights>")
       end
     end
     
-    m.choice(:modify) do |command, details|
+    m.choice(:modify, "modify [R/W/RW] <subject_id> <object_id>") do |command, details|
       modify_pattern = /([RW]+) (\w+) (\w+)/
             
       rights_id, subject_id, object_id = details.scan(modify_pattern).first
@@ -92,7 +99,6 @@ loop do
         capability = subject.capabilities[object_id]
         capability.right = rights_id
         say("Capability modified – it should no longer be valid.")
-        say("valid #{subject_id} #{object_id}: #{@k.verify(subject, capability)}")
       rescue Exception => e
         say e
         say("try this instead: 'modify <rights> <subject> <object>")
@@ -100,7 +106,7 @@ loop do
       end
     end
     
-    m.choice(:valid) do |command, details|
+    m.choice(:valid, "valid <subject_id> <object_id>") do |command, details|
       begin
         valid_pattern = /(\w+) (\w+)/
       

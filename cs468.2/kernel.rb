@@ -42,7 +42,7 @@ module Cap
     end
     
     def to_s
-      "<Object name=#{name}, clearance=#{Clearance::Names[clearance]}>"
+      "<Object name=#{name}, clearance=#{Clearance::Names[clearance]}>\n"
     end
   end
   
@@ -123,13 +123,22 @@ module Cap
       raise PrivelegeError.new if rights != (self.right & rights)
     end
     
+    # Compares to different instances of a capability to see if they
+    # are logically equivalent.
+    def equivalent(c)
+      self.token == c.token
+      self.right == c.right
+    end
+    
     # Right is a string R, W, or RW
     def right=(r)
       @right = eval("Right::#{r.upcase}")
     end
     
     def to_s
-      "<Capability rights: #{Right::Names[@right]}, token: #{token}, #{object.to_s}"
+      "<Capability rights: #{Right::Names[@right]}, token: #{token}>\n" +
+      @object.to_s +
+      "</Capability>"
     end
     
     def to_str
@@ -144,7 +153,7 @@ module Cap
     end
   end
   
-  class Kernel
+
     def initialize
       @seed = Time.now # right...
     end
@@ -161,7 +170,7 @@ module Cap
     def grant(subject, object, right=Right::RW)
       capability = Capability.new(subject, object, right, @seed)
       object_map[object] = [capability, subject]
-      subject.give(capability)
+      subject.give(capability.clone)
       capability
     end
     
@@ -190,7 +199,7 @@ module Cap
       # If the original matches the alleged capability then it is valid.  However,
       # the supplicant must also be the owner.  Otherwise, this means that someone
       # else is using a capability they should not have.
-      return true if original_capability == alleged_capability and supplicant == owner
+      return true if original_capability.equivalent(alleged_capability) and supplicant == owner
 
       # At this point, we must determine if the alleged_capability was derived
       # from the original_capability.  If the rights have been tampered with or
