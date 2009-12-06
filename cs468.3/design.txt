@@ -1,0 +1,11 @@
+Lifecycle:
+
+expand - eval
+decrypt - old code
+execute - update existing file
+permute - decryption/encryption
+encrypt – single call
+replace – simple
+
+
+eval(decrypt)
