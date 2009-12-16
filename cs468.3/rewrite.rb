@@ -1,23 +1,24 @@
-# -- awake
-# [ ] read SDES
-# [ ] decrypt mutator
-# [ ] mutate and replace SDES
-# [ ] payload: increment file
-# [ ] encrypt mutator
-# -- sleep
+#
+# [x] read SDES
+# [x] decrypt mutator
+# [x] mutate and replace SDES
+# [x] encrypt and replace mutator
+#
+require "mutator_original" # to include mutator without decrypting it.
+#
 
-def decrypt(path)
-  require "mutator"
-  puts "todo"
+require "encrypt"
+
+def decrypt(text)
+  SDES::Utility.decrypt(text, "1100100001")
 end
 
-def encrypt(path)
-  puts "todo"
+def encrypt(text)
+  SDES::Utility.encrypt(text, "1100100001")
 end
 
 # Convert code into an AST, muck it up, generate ruby
-def mutated(source)
-  puts "mutating"
+def mutate(source)
   Ruby2Ruby.new.process(
     Eve.new.rewrite(
       Adam.new.rewrite(
@@ -27,11 +28,20 @@ end
 # Read and replace a source file with a mutation
 def replace(path)
   original = open(path,"r") { |f| f.lines.map.join }
-  variant = yield(original)
-  open(path,"w") { |f| f.puts(variant) }
+  modified = yield(original)
+  open(path,"w") { |f| f.puts(modified) }
 end
 
-# The bootstrap.
-decrypt("mutator.rb")
-replace("encrypt.rb") { |code| mutated(code) }
-encrypt("mutator.rb")
+replace("encrypt.rb") do |code|
+  decrypt(open("mutator.rb","r").first)
+  mutate(code)
+end
+
+replace("test.rb") do |code|
+  decrypt(open("mutator.rb","r").first)
+  mutate(code)
+end
+
+# replace("mutator.rb") do |m|
+#   encrypt(open("mutator_original.rb","r").lines.map.join)
+# end
