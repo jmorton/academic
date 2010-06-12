@@ -42,16 +42,20 @@ class Bag
   # This will create two different choices: one having accepted the item for
   # inclusion, the other declining it.
   def consider(item)
-    # Call map! so that the underlying choice is updated
-    # otherwise a copy of each choice will be used and the
-    # accepted/declined attribute will not be updated.
-    new_choices = self.choices.map! do |some_choice|
+    # Call map! so that the underlying choice is updated.
+    # Otherwise, accepted/declined attribute will be nil
+    # and drawing will fail.
+    self.choices.map! do |some_choice|
       unless some_choice.hopeless? or some_choice.overweight?
         some_choice.consider(item)
       end
-    end
-    self.choices += new_choices
-    self.choices.flatten!.compact!
+    end.flatten!.compact!
+  end
+  
+  # Any choices that have a chance of working
+  def best(limit = self.choices.length)
+    cs = self.choices.reject { |c| c.hopeless? or c.overweight? or c.worthless? }
+    cs.sort { |c1,c2| c2.value <=> c1.value }[0..limit]
   end
   
 end
@@ -69,7 +73,7 @@ class Choice
   def consider(item)
     self.accepted = Choice.new(item, self, self.bag, self.pile)
     self.declined = Choice.new(nil, self, self.bag, self.pile)
-    return [self.accepted, self.declined]
+    return self.accepted, self.declined
   end
   
   def upper_bound
@@ -89,7 +93,15 @@ class Choice
   end
   
   def overweight?
-    remaining_capacity < 0
+    remaining_capacity <= 0
+  end
+  
+  def worthless?
+    value <= 0
+  end
+  
+  def viable?
+    !(worthless? || overweight?)
   end
   
   def weight
@@ -97,7 +109,7 @@ class Choice
   end
   
   def value
-    item_value + parent_value
+    item_value + (parent && parent.value || 0) || 0
   end
     
   def item_weight
@@ -109,16 +121,16 @@ class Choice
   end
   
   def item_name
-    item && item.name || "(none)"
+    item && item.name || "-"
   end
   
   def parent_weight
     parent && parent.weight || 0
   end
 
-  def parent_value
-    parent && parent.item_value || 0
-  end
+  # def parent_value
+  #   parent && parent.parent_value + item_value || item_value
+  # end
   
   def ancestors
     if self.parent.nil?
@@ -150,7 +162,7 @@ class Choice
   
   def match(n)
     n == self
-  end  
+  end
     
 end
 
