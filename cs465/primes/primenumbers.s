@@ -4,7 +4,15 @@
   .ascii      "\nCS465, Computer Architecture, Fall 2010\n\n"
   .ascii      "spim successive integer counting program\n"
   .asciiz     "Author: Huzefa Rangwala\n"
+  
+Success1:
+  .asciiz     "\nYES, the number is prime.\n"
 
+Success2_start:
+  .asciiz     "\nNO, the number is not prime but "
+
+Success2_end:
+.asciiz       " is.\n"
 
 Prompt:  
   .asciiz      "\nPlease enter the input number: "
@@ -46,21 +54,40 @@ start:
 #    Right now $t0 holds the value from prompt
 #    
 ######################################################    
-   addi $a0, $t0, 0
-   jal isprime
-   move $t0, $v0
 
+check:
+    addi $a0, $t0, 0
+    jal isprime
+    beq $v0, $zero, retry
+    la $a0, Success1
+    li $v0, 4 #Print the result prompt
+    syscall
+    j exit
+    
+retry:
+    addi $a0, $a0, 1
+    jal isprime
+    beq $v0, $zero, retry
+    move $t0, $a0 # hang onto the number we found
+
+    la $a0, Success2_start
+    li $v0, 4 # print the result message
+    syscall
+
+    li $v0, 1 # print the found number
+    move $a0, $t0
+    syscall
+    
+    la $a0, Success2_end
+    li $v0, 4 # print the result message
+    syscall
+
+    j exit
+    
 ############################################################
 #  Print and Exit
 ###########################################################
-    li $v0, 4 #Print the result prompt
-    la $a0, Result
-    syscall
-
-    li $v0, 1 #Print the decimal values
-    move $a0, $t0
-    syscall
-
+exit:
     li $v0, 10 # Return control to OS
     syscall
 
@@ -97,15 +124,13 @@ isprime:
 isprimeLoop:
     # if n is less than or equal to 1
     # x hasn't been divided evenly
-    # so n is prime
+    # so x is prime
     ble   $t0, $t1, True
     
-    # divide x by n and get the remainder
+    # divide x by n and check the remainder,
+    # returning false if it divided evenly
     div   $a0, $t0
     mfhi  $t2
-    
-    # if the remainder is zero the number divided
-    # evenly and isn't prime
     beq   $t2, $zero, False
     
     # reduce n by one and try again
