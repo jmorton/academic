@@ -65,7 +65,8 @@ start:
     syscall
 
 ############################################################
-#  Print and Exit
+#  Prime number check:
+#  $v0 = 0 when false, 1 when true
 ###########################################################
 #  isprime(x = $a0):
 #  if x <= 1
