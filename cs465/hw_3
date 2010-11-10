@@ -1,0 +1,86 @@
+Exercise 4.7
+
+4.7.1. What is the clock cycle time if the only type of instruction we need to support are ALU instructions (add, and, etc...)
+
+Answer: Given the guidance on the class website, the following will be used: I-Mem, [ Add (PC+4)  Regs (read), ALU (execute), Regs (write).
+
+400 (I-Mem) + 30 (Mux) + 200 (Reg. Read) + 30 (Mux) + 120 (ALU) + 30 (Mux) + 200 (Reg. Write) = 1010 ps.
+
+This does not need to account for the PC+4 operation since that happens in parallel.
+
+4.7.2. What is the clock cycle time if we only had to support lw instructions?
+
+lw requires the use of I-Mem, Regs, ALU, Sign-extend, and D-Mem.  Assuming the same guidance on muxes with respect to 4.7.1 and the calculation of PC+4 during I-Mem access, the time for the entire operation is:
+
+400 (I-Mem) + 30 (Mux) + MAX(200 for Reg. Read or 20 for Sign-extend) + 30 (mux) + 120 (ALU) + 350 (D-Mem) + 30 (Mux) + 200 (Reg. Write) = 1360 ps.
+
+4.7.3. What is the clock cycle time if we must support add, beq, lw, and sw instructions?
+
+To figure this out, we need to determine the slowest instruction.  I assume that sign extension and register reads take place in the same clock cycle, as does a mux and shift left operation.
+
+add: IM + Mux + Reg.Read + Mux + ALU + Mux + Reg.Write = 400+30+200+30+120+30+200+30 = 1010ps
+beq: IM + Mux + MAX(Reg.Read or Sign-Ext.) + MAX(Mux or Shift-Left-2) + MAX(ALU or Add-ALU) + MAX(Mux or Mux) + PC Write(?) = 400+30+200+30+120+30+200 = 1010ps
+lw: IM + Mux + MAX(Reg.Read or Sign-Ext.) + Mux + ALU + D-Mem + Mux + Reg.Write = 400+30+200+30+120+30+350+30+200 = 1390ps
+sw: IM + Mux + MAX(Reg.Read or Sign-Ext) + Mux + ALU + D-Mem = 400+30+200+30+120+30+350 = 1160ps.
+
+Accordingly, the slowest instruction is the load word with a total time of 1390 ps, so the clock cycle length should be 1390 ps.
+
+4.7.4 In what fraction of all cycles is the data memory used?
+
+A. Data memory is only used during lw (20%) and sw (10%).  Therefore, the fraction of cycles is 30/100.
+
+4.7.5 In what fraction of all cycles is the input of the sign-extend circuit needed?  What is this circuit doing in cycles in which its input is not needed?
+
+Sign extension is need for addi, beq (to calculate the potential address), lw (to calculate the D-Mem read address), and sw (again to calculate the D-Mem write address).  15% + 20% + 20% + 10% = 65%
+
+According to diagram 4.19, the sign extension block is not connected to logic.  Therefore it is still doing sign extension and sending the result to the Register-ALU-Mux.  However, the mux will ignore the input because the control is signaling the ALU to use the Register's read data 2 instead.
+
+4.7.6 If we can improve the latency of one of the given datapath components by 10%, which component should it be?  What is the speed-up from the improvement?
+
+A. Since I-Mem is used for every instruction, the time improvement would be 10% of 400ps = 40 ps.
+
+4.12 IF      ID      EX      MEM     WB
+     300ps   400ps   350ps   500ps   100ps
+
+4.12.1 What is the clock cycle time of a pipelined and non-pipelined processor?
+A. Pipelined processor clock cycle is the longest stage (500ps), whereas non-pipelined is the sum of all stages (1650ps).
+
+4.12.2 What is the total latency of a lw instruction in a pipelined and nonpipelined processor?
+A. Pipelining improves throughput, not latency.  The latency is 300+400+350+500+100 = 1650ps
+
+4.12.3 If we can split one stage of the pipelined datapath into two new stages, each with half the latency of the original stage, which stage would you split and what is the new clock cycle time of the processor?
+
+Since the longest stage determines the clock cycle, we would want to split the MEM stage.  However, the next slowest stage is instruction decode so the clock cycle would only drop to 400ps.
+
+4.13
+
+lw  $1, 40($6)
+add $6, $2, $2
+sw  $6, 50($1)
+
+4.13.1 Indicate dependencies and their type.
+
+A. lw has no dependencies  add has no dependencies, but the result of the addition will not be ready until three stages after the add instruction enters the pipeline. sw depends on:
+- the value in $1 after reading data memory. This is a load use data hazard (EX/MEM.RegisterRd)
+- the value in $6 after adding $2+$2. This is a data hazard (MEM/WB.RegisterRd)
+
+  1    2    3    4    5    6    7    (Time Interval)
+| IF | ID | EX | MEM| WB |
+     | IF | ID | EX | MEM| WB |
+          | IF | ID | EX | MEM| WB |
+          
+4.13.2 Assume there is no forwarding, indicate hazards.
+
+A. sw will need to wait for add to complete the WB stage.  This means that four nops are needed after add in order to bubble... avoid the hazard.
+
+4.13.3 Assume there is full forwarding.  Indicate hazards and add nop instructions to eleminate them.
+
+A. With full forwarding, the value of $1 will be ready at time interval 4.  The value of $6 will be ready at time interval 4 as well.  Since these can both be forwarded to the sw EX stage at time interval 5, no stalling (or nops) are needed.
+
+
+
+
+4.7.1 Observation: This question is quite ambiguous because it does not specify whether or not these types include addi, andi, etc...  This is important, because it will have an impact on the number of muxes and whether or not sign extension is needed.
+
+Assuming that these instructions do not include immediate values the following are needed: I-Mem for fetching the instruction, Add in order to increment the PC, ALU to perform the needed operations, Regs to get the input and save the output.  Since the write register for both of these (and I assume other instructions of the same type) will always be specified in field 11-15, the pre-register mux is not needed.  Similarly, since immediate values do not need accomodation, the register-ALU-mux is not necessary.  Finally, since no decision between the value produced by the ALU and one fetched from D-Mem needs to me made, the last mux is not necessary.
+

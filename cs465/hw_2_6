@@ -1,0 +1,99 @@
+2.2.1
+
+a. f = f + f + i
+
+add $s0, $s0, $s0 # f = f+f
+add $s0, $s0, $s1 # f = f+i
+
+let the value of f and i be stored in $s0 and $s1 respectively
+
+b. f = g + (j + 2)
+
+add  $s0, $s1, $s2  # add g + j, store in f
+addi $s0, $s0, 2
+
+2.2.2 – Each requires two instructions.
+
+2.2.3 
+a. f has the value 6
+b. No value for j is defined.  However, if j is supposed to be i with a value of 4, then the value is 8.  (2 + 4 + 2)
+
+2.2.4
+
+a.  add f, f, h
+
+f = f + h
+
+b.  sub f, $0, f
+    addi f, f, 1
+    
+Assuming $0 is $zero, f = (-f) + 1
+
+2.2.5
+a. 4, because 1 + 3 = 4
+b. 0, because (0-1) + 1
+
+
+000000000001010
+010100+1
+101011+1 = 101110
+111111111101110
+
+2.6.1a. f = -6 + h + B[1]
+
+f,g,h,i,A,B: $s0,$s1,$s2,$s3,$s6,$s7
+
+lw   $s0, 4($s6)     # derefence B[1]
+add  $s0, $s0, $s2   # + h
+subi $s0, $s0, 6     # - 6
+
+2.6.1b. f = A[B[g]+1]  (f,g,hi,i,j/s0,s1,s2,s3,s4) (A,B/s6,s7)
+
+addi  $t0, $s7, 4     # calculate the offset of B[g]
+lw    $t0, 0($t0)     # load B[g] into a register (an index)
+addi  $t0, $t0, 1     # calculate the index B[g]+1
+sll   $t0, $t0, 2     # multiply the index by 4 to get the relative memory offset
+add   $t0, $s6, $t0   # replace the index with the actual offset
+lw    $s0, 0($t0)     # dereference A
+
+
+2.6.2a. needs three statements
+
+2.6.2b. Needs six statements because the index/offset must be calculated for *both* dereferencing operations.  The last dereferencing needs to turn the relative value into an address offset that is a factor of four.
+
+2.6.3a. I don't think any extra registers are needed.  The MIPS code only operates on two registers: $s0 and $s2 because the value in B[1] can be loaded int f ($s0).
+
+2.6.3b. One extra register is needed to hold temporary calculations of array index.  If you keep manipulating the same temporary register, it seems like it should work.
+
+2.6.4 a/b
+
+f = f + g   # add  $s0, $s0, $s1
+f = i + h   # add  $s0, $s3, $s2
+f = f + i   # add  $s0, $s0, $s3
+&A - 20     # addi $s6, $s6, -20 (my c is rusty, book examples helped mildly)
+&A + x      # add  $s6, $s6, $s1
+f = *A + 2  # lw   $s0, 8($s6)
+
+2.6.5 ($s0,$s1,$s2,$s3/10,20,30,40 $s6/256)
+256 : 100
+260 : 200
+264 : 300
+
+a. $s0 = (40 + 30) + 40 is 110
+
+b:
+1 – $s6 = 256 - 20 # 256
+2 – $s6 = 246 + 20 # 256
+3 – $s0 = value in address 256+8 # 300
+
+2.6.6
+
+type                   op     rs    rt    (R-type:rd/I-type:immediate)
+                       ------|-----|-----|-----            
+R add  $s0, $s0, $s1   000000 10000 10001 10000            [0/16/17/16]
+R add  $s0, $s3, $s2   000000 10011 10010 10000            [0/19/18/16]
+R add  $s0, $s0, $s3   000000 10000 10011 10000            [0/16/19/16]
+I addi $s6, $s6, -20   001000 10110 10110 111111111101110  [8/21/21/-20]
+I lw   $s0, 8($s6)     100011 10110 10000 000000000001000  [35/21/16/+8]
+
+ 

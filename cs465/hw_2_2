@@ -1,0 +1,37 @@
+2.2.1
+
+a. f = f + f + i
+
+add $s0, $s0, $s0 # f = f+f
+add $s0, $s0, $s1 # f = f+i
+
+let the value of f and i be stored in $s0 and $s1 respectively
+
+b. f = g + (j + 2)
+
+add  $s0, $s1, $s2  # add g + j, store in f
+addi $s0, $s0, 2
+
+2.2.2 – Each requires two instructions.
+
+2.2.3 
+a. f has the value 6
+b. No value for j is defined.  However, if j is supposed to be i with a value of 4, then the value is 8.  (2 + 4 + 2)
+
+2.2.4
+
+a.  add f, f, h
+f = f + h
+
+b.  sub f, $0, f
+    addi f, f, 1    
+Assuming $0 is $zero, f = (-f) + 1
+
+2.2.5
+a. 4, because 1 + 3 = 4
+b. 0, because (0-1) + 1
+
+000000000001010
+010100+1
+101011+1 = 101110
+111111111101110
