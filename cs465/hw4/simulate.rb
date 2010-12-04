@@ -32,15 +32,14 @@ def cache_block_size_metrics
   cache_sizes = %w(2 4 8 16 32)
   block_sizes = %w(16 32 64 128)
 
-  puts "cache, block, miss rate, traffic"
-
+  puts "X" + "\t" + block_sizes.join("\t")
   rs = cache_sizes.map do |cache_size|
-    block_sizes.map do |block_size|
+    row = block_sizes.map do |block_size|
       output = simulate_cache_block(cache_size, block_size)
-      result = [ cache_size, block_size, [ average_miss_rate(output)[0], average_memory_traffic(output)[1] ].flatten ]
-      puts result.flatten.join(',')
-      result
+      yield(output)
     end
+    puts cache_size + "\t" + row.join("\t")
+    row
   end
   rs
 end
@@ -51,22 +50,37 @@ end
 
 def associativity_replacement_metrics
   policies = %w(r l)
-  associativies = %w(1 2 4 8)
+  associativies = %w(1 2 4 8 16)
 
-  puts "policy, assoc., miss rate, traffic"
-
+  puts "X" + "\t" + associativies.join("\t")
   rs = policies.map do |policy|
-    associativies.map do |associativity|
+    row = associativies.map do |associativity|
       output = simulate_replacement_policy(associativity, policy)
-        result = [ policy, associativity, [ average_miss_rate(output)[0], average_memory_traffic(output)[1] ].flatten ]
-        puts result.flatten.join(',')
-        result
+      yield(output)
     end
+    puts policy + "\t" + row.join("\t")
+    row
   end
   rs
 end
 
-cache_block_size_metrics
+puts "Analyzing miss rate"
+cache_block_size_metrics do |output|
+  average_miss_rate(output)[0]
+end
 
-associativity_replacement_metrics
+puts "Analyzing memory traffic"
+cache_block_size_metrics do |output|
+  average_memory_traffic(output)[1]
+end
+
+puts "Analyzing miss rate for different LRU"
+associativity_replacement_metrics do |output|
+  average_miss_rate(output)[0]
+end
+
+puts "Analyzing memory traffic for different LRU"
+associativity_replacement_metrics do |output|
+  average_memory_traffic(output)[1]
+end
 
