@@ -6,7 +6,7 @@
 cache_sizes = %w(2 4 8 16 32)
 block_sizes = %w(16 32 64 128)
 
-def simulate(cache_size, block_size)
+def simulate_cache_block(cache_size, block_size)
   return %x(dineroIV -informat d -l1-usize #{cache_size}K -l1-ubsize #{block_size} < spice.din)
 end
 
@@ -31,12 +31,31 @@ def average_memory_traffic(string)
   return matches[0]
 end
 
-puts "cache, block, miss rate, traffic"
-rs = cache_sizes.map do |cache_size|
-  block_sizes.map do |block_size|
-    output = simulate(cache_size, block_size)
-    result = [ cache_size, block_size, [ average_miss_rate(output)[0], average_memory_traffic(output)[1] ].flatten ]
-    puts result.flatten.join(',')
-    result
+def cache_block_size_metrics
+  puts "cache, block, miss rate, traffic"
+  rs = cache_sizes.map do |cache_size|
+    block_sizes.map do |block_size|
+      output = simulate_cache_block(cache_size, block_size)
+      result = [ cache_size, block_size, [ average_miss_rate(output)[0], average_memory_traffic(output)[1] ].flatten ]
+      puts result.flatten.join(',')
+      result
+    end
   end
 end
+
+def simulate_replacement_policy(associativity, policy)
+  %x(dineroIV -informat d -l1-dsize 16K -l1-dbsize 16 -l1-dassoc #{associativity} -l1-drepl #{policy} < spice.din)
+end
+
+def associativity_replacement_policy
+  rs = %w(r l).map do |policy|
+    %w(1 2 4 8).map do |associativity|
+      output = simulate_replacement_policy(associativity, policy)
+        result = [ policy, associativity, [ average_miss_rate(output)[0], average_memory_traffic(output)[1] ].flatten ]
+        puts result.flatten.join(',')
+        result
+    end
+  end
+end
+
+associativity_replacement_policy
