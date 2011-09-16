@@ -17,13 +17,16 @@ require './instructions'
 
 class Emulator
   
-  attr_accessor :code, :data, :register, :instruction_pointer, :last_instruction
+  attr_accessor :code, :data, :register, :last_instruction,
+  :instruction_pointer, :stack_pointer
+
+  STACK_START = 500
 
   def initialize(instructions)
     @code = []
     @data = []
     @register = []
-    @instruction_pointer = 0
+    @instruction_pointer, @stack_pointer = 0, STACK_START
     load!(instructions)
   end
 

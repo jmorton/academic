@@ -153,28 +153,28 @@ Instruction.new( 23, 'ble' ) do |m, a, d|
 end
 
 Instruction.new( 24, 'pushd' ) do |m, d, _|
-  m.stack_pointer += 1
+  m.stack_pointer -= 1
   m.data[stack_pointer] = m.data[d] # test
 end
 
 Instruction.new( 25, 'pushr' ) do |m, r, _|
-  m.stack_pointer += 1
+  m.stack_pointer -= 1
   m.data[m.stack_pointer] = m.register[r] # test
 end
 
 Instruction.new( 26, 'pushi' ) do |m, n, _|
-  m.stack_pointer += 1
+  m.stack_pointer -= 1
   m.data[m.stack_pointer] = n # test
 end
 
 Instruction.new( 27, 'popd' ) do |m, d, _|
   m.data[d] = m.data[m.stack_pointer]
-  m.stack_pointer -= 1
+  m.stack_pointer += 1
 end
 
 Instruction.new( 28, 'popr' ) do |m, r, _|
   m.register[r] = m.data[m.stack_pointer]
-  m.stack_pointer -= 1
+  m.stack_pointer += 1
 end
 
 Instruction.new 29, 'puti' do |m,d,x|
