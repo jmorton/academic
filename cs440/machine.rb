@@ -1,11 +1,23 @@
+# Author: Jon Morton
+#
+# Release under The MIT License (MIT)
+# Copyright (c) 2011, Jonathan Morton
+#
+# Emulator provides a simple machine for executing Instructions.
+#
+# It has separate memory stores for code, data, and registers. Emulator
+# maintains a stack pointer in register zero.  It keeps an instruction
+# pointer in it's own memory location.
+#
+# Emulator implements fetch, execute, run, and halt independently.
+#
+# Invalid instructions are displayed to STDOUT. 
+# 
 require './instructions'
 
 class Emulator
   
-  attr_accessor :code
-  attr_accessor :data
-  attr_accessor :register
-  attr_accessor :instruction_pointer
+  attr_accessor :code, :data, :register, :instruction_pointer, :last_instruction
 
   def initialize(instructions)
     @code = []
@@ -27,16 +39,23 @@ class Emulator
   #
   # @return List<Fixnum, Fixnum, Fixnum>
   # 
-  def fetch
-    @code[@instruction_pointer]
+  def fetch!
+    @last_instruction = @code[@instruction_pointer,3]
+    @instruction_pointer += 3
+    @last_instruction
   end
   
   # Invokes the given instruction
   #
+  # @param triple
+  #   1st - instruction number
+  #   2nd - arg1
+  #   3rd - arg2
+  # 
   # @return nil
   # 
-  def execute(i)
-    I[i.first].call( self, i[1], i[2] )
+  def execute!(triple)
+    Instruction[ triple.first ].execute( self, triple[1], triple[2] ) rescue p triple
   end
 
   # Moves an instruction into the code section of the machine.  It does
@@ -54,7 +73,7 @@ class Emulator
   # 
   def load!(instruction)
     instruction.each_line do |line|
-      @code << line.scan(/\d+/).map { |string| string.to_i }
+      @code.push(*line.scan(/\d+/).map { |string| string.to_i } )
     end
 
     return @code
@@ -68,8 +87,7 @@ class Emulator
     @running = true
     
     while @running and (@instruction_pointer < @code.length)
-      execute(fetch)
-      @instruction_pointer += 1
+      execute!(fetch!)
     end
     
     return nil
@@ -85,7 +103,6 @@ class Emulator
   end
   
 end
-
 
 # Get the machine code and run it
 # 
