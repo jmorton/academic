@@ -118,14 +118,16 @@ insert(struct list *listp, struct item *itemp, int position)
 	else
 		{
 			struct item *b = get(listp, position);
-			b->prev->next = itemp;
-			b->prev = itemp;
 			itemp->next = b;
 			itemp->prev = b->prev;
+			b->prev->next = itemp;
+			b->prev = itemp;
 		}
 
 	// Ensure the tail is set... this only happens when adding
 	// an item to an empty list.
+	if (listp->head == NULL)
+		listp->head = itemp;
 	if (listp->tail == NULL)
 		listp->tail = listp->head;
 
