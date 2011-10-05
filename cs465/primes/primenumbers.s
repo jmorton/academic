@@ -3,7 +3,8 @@
  Author:
   .ascii      "\nCS465, Computer Architecture, Fall 2010\n\n"
   .ascii      "spim successive integer counting program\n"
-  .asciiz     "Author: Huzefa Rangwala\n"
+  .ascii      "Author: Jon Morton (implemented prime check)\n"
+  .asciiz     "Original Author: Huzefa Rangwala (provided outline)\n"
   
 Success1:
   .asciiz     "\nYES, the number is prime.\n"
@@ -55,15 +56,17 @@ start:
 #    
 ######################################################    
 
+# Check the first number entered for primeness
 check:
     addi $a0, $t0, 0
     jal isprime
     beq $v0, $zero, retry
     la $a0, Success1
-    li $v0, 4 #Print the result prompt
+    li $v0, 4 # print the message for entered number being prime
     syscall
     j exit
-    
+
+# Try to find the next prime number (if the entered number was not prime)
 retry:
     addi $a0, $a0, 1
     jal isprime
@@ -113,7 +116,7 @@ isprime:
     # store the loop termination check value (1)
     li    $t1, 1
     
-    # any number less than or equal to 1 aren't prime
+    # any number less than or equal to 1 isn't prime
     ble   $a0, $t1, False
         
     # n = x / 2, $t0 will hold n

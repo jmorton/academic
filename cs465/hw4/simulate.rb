@@ -1,8 +1,5 @@
 #!/usr/bin/ruby
 
-# output = %x(dineroIV -informat d -l1-dsize 16K -l1-dbsize 16 -l1-dassoc 2 -l1-drepl l < spice.din)
-# puts output
-
 # Matches a string like this:
 #   Demand miss rate        0.1279        0.0968        0.2398        0.2471        0.2233        0.0000
 # And returns an array of the column values
@@ -24,15 +21,16 @@ def average_memory_traffic(string)
   return matches[0]
 end
 
+# Wraps the command for simulating cache and block variations
 def simulate_cache_block(cache_size, block_size)
   return %x(dineroIV -informat d -l1-usize #{cache_size}K -l1-ubsize #{block_size} < spice.din)
 end
 
-def cache_block_size_metrics
+def measure_cache_block_size_effect
   cache_sizes = %w(2 4 8 16 32)
   block_sizes = %w(16 32 64 128)
 
-  puts "X" + "\t" + block_sizes.join("\t")
+  puts "+" + "\t" + block_sizes.join("\t")
   rs = cache_sizes.map do |cache_size|
     row = block_sizes.map do |block_size|
       output = simulate_cache_block(cache_size, block_size)
@@ -48,39 +46,50 @@ def simulate_replacement_policy(associativity, policy)
   %x(dineroIV -informat d -l1-dsize 16K -l1-dbsize 16 -l1-dassoc #{associativity} -l1-drepl #{policy} < spice.din)
 end
 
-def associativity_replacement_metrics
+def measure_policy_associativity_effect
   policies = %w(r l)
   associativies = %w(1 2 4 8 16)
 
-  puts "X" + "\t" + associativies.join("\t")
+  puts "+" + "\t" + associativies.join("\t")
   rs = policies.map do |policy|
-    row = associativies.map do |associativity|
+    cs = associativies.map do |associativity|
       output = simulate_replacement_policy(associativity, policy)
       yield(output)
     end
-    puts policy + "\t" + row.join("\t")
-    row
+    puts policy + "\t" + cs.join("\t")
+    cs
   end
   rs
 end
 
+# Example:
+# Measure.policies.associativity # => { <policies> => <associativity> => [metrics] }
+# Simulation do |with|
+#   with.policies      LRU, Random
+#   with.associativity 1, 2, 4, 8, 16
+#   measure Miss
+# end
+def measure(a1, a2)
+  rs = a1.value
+end
+
 puts "Analyzing miss rate"
-cache_block_size_metrics do |output|
+measure_cache_block_size_effect do |output|
   average_miss_rate(output)[0]
 end
 
 puts "Analyzing memory traffic"
-cache_block_size_metrics do |output|
+measure_cache_block_size_effect do |output|
   average_memory_traffic(output)[1]
 end
 
 puts "Analyzing miss rate for different LRU"
-associativity_replacement_metrics do |output|
+measure_policy_associativity_effect do |output|
   average_miss_rate(output)[0]
 end
 
 puts "Analyzing memory traffic for different LRU"
-associativity_replacement_metrics do |output|
+measure_policy_associativity_effect do |output|
   average_memory_traffic(output)[1]
 end
 

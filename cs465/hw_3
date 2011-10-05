@@ -1,18 +1,11 @@
 Exercise 4.7
 
 4.7.1. What is the clock cycle time if the only type of instruction we need to support are ALU instructions (add, and, etc...)
-
-Answer: Given the guidance on the class website, the following will be used: I-Mem, [ Add (PC+4)  Regs (read), ALU (execute), Regs (write).
-
-400 (I-Mem) + 30 (Mux) + 200 (Reg. Read) + 30 (Mux) + 120 (ALU) + 30 (Mux) + 200 (Reg. Write) = 1010 ps.
-
-This does not need to account for the PC+4 operation since that happens in parallel.
+Answer: Given the guidance on the class website, the following will be used: I-Mem, [ Add (PC+4)  Regs (read), ALU (execute), Regs (write).  400 (I-Mem) + 30 (Mux) + 200 (Reg. Read) + 30 (Mux) + 120 (ALU) + 30 (Mux) + 200 (Reg. Write) = 1010 ps.  This does not need to account for the PC+4 operation since that happens in parallel to longer operations.
 
 4.7.2. What is the clock cycle time if we only had to support lw instructions?
 
-lw requires the use of I-Mem, Regs, ALU, Sign-extend, and D-Mem.  Assuming the same guidance on muxes with respect to 4.7.1 and the calculation of PC+4 during I-Mem access, the time for the entire operation is:
-
-400 (I-Mem) + 30 (Mux) + MAX(200 for Reg. Read or 20 for Sign-extend) + 30 (mux) + 120 (ALU) + 350 (D-Mem) + 30 (Mux) + 200 (Reg. Write) = 1360 ps.
+lw requires the use of I-Mem, Regs, ALU, Sign-extend, and D-Mem.  Assuming the same guidance on muxes with respect to 4.7.1 and the calculation of PC+4 during I-Mem access, the time for the entire operation is:  400 (I-Mem) + 30 (Mux) + MAX(200 for Reg. Read or 20 for Sign-extend) + 30 (mux) + 120 (ALU) + 350 (D-Mem) + 30 (Mux) + 200 (Reg. Write) = 1360 ps.
 
 4.7.3. What is the clock cycle time if we must support add, beq, lw, and sw instructions?
 
@@ -38,7 +31,6 @@ According to diagram 4.19, the sign extension block is not connected to logic.  
 4.7.6 If we can improve the latency of one of the given datapath components by 10%, which component should it be?  What is the speed-up from the improvement?
 
 A. Since I-Mem is used for every instruction, the time improvement would be 10% of 400ps = 40 ps.
-
 4.12 IF      ID      EX      MEM     WB
      300ps   400ps   350ps   500ps   100ps
 
@@ -76,11 +68,3 @@ A. sw will need to wait for add to complete the WB stage.  This means that four 
 4.13.3 Assume there is full forwarding.  Indicate hazards and add nop instructions to eleminate them.
 
 A. With full forwarding, the value of $1 will be ready at time interval 4.  The value of $6 will be ready at time interval 4 as well.  Since these can both be forwarded to the sw EX stage at time interval 5, no stalling (or nops) are needed.
-
-
-
-
-4.7.1 Observation: This question is quite ambiguous because it does not specify whether or not these types include addi, andi, etc...  This is important, because it will have an impact on the number of muxes and whether or not sign extension is needed.
-
-Assuming that these instructions do not include immediate values the following are needed: I-Mem for fetching the instruction, Add in order to increment the PC, ALU to perform the needed operations, Regs to get the input and save the output.  Since the write register for both of these (and I assume other instructions of the same type) will always be specified in field 11-15, the pre-register mux is not needed.  Similarly, since immediate values do not need accomodation, the register-ALU-mux is not necessary.  Finally, since no decision between the value produced by the ALU and one fetched from D-Mem needs to me made, the last mux is not necessary.
-

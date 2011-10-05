@@ -1,0 +1,13 @@
+# Example:
+#
+# Simulation do |with|
+#   with.policies      LRU, Random
+#   with.associativity 1, 2, 4, 8, 16
+#   measure Miss
+# end
+#
+def measure(a1, a2)
+  rs = a1.value
+end
+
+class

@@ -18,6 +18,13 @@ class Simulator
     :policy      =>   '-l1-drepl'
   }
 
+  # Create a simulator using a nice DSL.
+  def Simulator.setup(options = {}, &block)
+    s = Simulator.new
+    yield(s)
+    s
+  end
+
   def initialize
     @default_cache_size = '16k'
     @command = 'dineroIV -informat d'
@@ -66,13 +73,6 @@ class Simulator
     end.flatten
   end
 
-  # Create a simulator.
-  def Simulator.setup(options = {}, &block)
-    s = Simulator.new
-    yield(s)
-    s
-  end
-
   # Encapsulates the idea of running a single simulation.  This makes it easier
   # to specify parameters and extract results.
   class Simulation
@@ -91,6 +91,14 @@ class Simulator
       self
     end
 
+    def cache_size
+      self.options[:cache_size]
+    end
+
+    def block_size
+      self.options[:block_size]
+    end
+
     def demand_miss_rate
       values = self.result.scan(/Demand miss rate\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/)
       Hash[Columns.zip(values[0])]
@@ -106,13 +114,12 @@ class Simulator
 end
 
 s = Simulator.setup do |with|
-  with.cache_sizes   %w(2K 4K 8K 16K)
+  with.cache_sizes   %w(2K 4K)
   with.block_sizes   16, 32, 64, 128
 end
 
 s.run do |simulation|
-  p simulation.demand_miss_rate
-  p simulation.demand_fetch_rate
+  puts "#{simulation.cache_size},#{simulation.block_size}:\t #{simulation.demand_miss_rate[:total]}"
 end
 
 

@@ -144,7 +144,7 @@ class Adam < SexpProcessor
   # s(_, :*, _)   -> pattern #2 – anything (times) anything else
   # !(...).empty? -> result is not empty
   def commutatitve(exp)
-    !(exp / Q?{ any( s(_,:+,_), s(_,:*,_) ) }).empty?
+    !(exp / Q?{ any( s(_,:*,_) ) }).empty?
   end
   
   # Remove junk methods

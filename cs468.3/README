@@ -1,0 +1,26 @@
+To run, from the command line enter:
+
+ruby rewrite.rb
+
+Notes:
+
+encrypt.rb – contains the code that will be mutated
+encrypt_original.rb – backup, just in case... also useful for comparison
+mutator.rb – encrypted mutation code
+mutator_original – backup of the mutation code, unencrypted
+rewrite.rb – the bootstrap
+test.rb – a litmus test you can check between runs, should be affected just like encrypt.rb
+test_original.rb – the starting version of test.rb
+
+
+= Implementation Details:
+
+1. Statement independence evaluation seems pretty solid.
+2. Commutativity detection is limited to multiplication.  Addition on string is not commutative, I didn't want to have to rewrite SDES to use a different operation for string concatenation... but this is possible.
+3. Junk code is removed and randomly generated each pass.  For ease of human detection, these calls start with the letter j.
+4. I had problems early on, but this should be runnable for many many generations without any problems.
+
+If you have any questions, please let me know.
+
+= Dependencies 
+Using other libraries is somewhat lame, but it made this approach more... interesting.  I used ruby2ruby, ruby_parser, and sexp_path.

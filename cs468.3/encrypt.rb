@@ -55,8 +55,8 @@ module SDES
       return "?"
     end
     def self.process(filelist)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       paths = open(filelist).readlines
@@ -87,121 +87,116 @@ module SDES
   P8 = ["6", "3", "7", "4", "8", "5", "10", "9"]
   module Utility
     def self.j1(*args)
-      @v2 ||= 7
-      @v1 ||= 5
-      (@v1 + @v2)
-    end
-    def self.j2(*args)
       @v4 ||= 10
       @v3 ||= 8
       (@v3 + @v4)
     end
-    def self.j3(*args)
+    def self.j2(*args)
       @v2 ||= 4
       @v1 ||= 2
       (@v1 + @v2)
     end
-    def self.j4(*args)
+    def self.j3(*args)
       @v4 ||= 7
       @v3 ||= 5
       (@v3 + @v4)
     end
-    # do nothing
-    # do nothing
-    # do nothing
-    # do nothing
-    def self.f(bits, subkey)
-      v2 = j3
-      v4 = j1
-      # do nothing
-      # do nothing
-      mix = subkey.base10.^(permute(SDES::EP, bits).base10).bits
-      sub_1 = select_two_bits_from(SDES::S1, mix[(4..7)])
-      sub_0 = select_two_bits_from(SDES::S0, mix[(0..3)])
-      four_bits = (sub_1 + sub_0).base10.bits(4)
-      permute(P4, four_bits)
+    def self.j4(*args)
+      @v2 ||= 10
+      @v1 ||= 8
+      (@v1 + @v2)
     end
-    def self.encrypt(input, key)
-      v2 = j3
-      v4 = j1
-      # do nothing
-      # do nothing
-      key_1, key_2 = SDES::Key.subkey(key)
-      bytes = input.each_char.map do |char|
-        perm = permute(Initial, char.bits)
-        round_1 = fk(perm, key_1)
-        flipped = flip(round_1)
-        round_2 = fk(flipped, key_2)
-        permute(Final, round_2)
-      end
-      bytes.join
-    end
+    # do nothing
+    # do nothing
+    # do nothing
+    # do nothing
     def self.decrypt(input, key)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       key_1, key_2 = SDES::Key.subkey(key)
       chars = input.scan(/[01]{8}/).map do |byte|
-        perm = permute(Initial, byte)
-        round_2 = fk(perm, key_2)
-        flipped = flip(round_2)
-        round_1 = fk(flipped, key_1)
+        round_2 = fk(permute(Initial, byte), key_2)
+        round_1 = fk(flip(round_2), key_1)
         permute(Final, round_1).base10.chr
       end
       chars.join
     end
     def self.fk(bits, key)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       left, right = bits[(0..3)], bits[(4..7)]
       mangled = left.base10.^(f(right, key).base10).bits(4)
-      (right + mangled)
+      (mangled + right)
+    end
+    def self.f(bits, subkey)
+      v4 = j1
+      v2 = j3
+      # do nothing
+      # do nothing
+      mix = subkey.base10.^(permute(SDES::EP, bits).base10).bits
+      sub_1 = select_two_bits_from(SDES::S1, mix[(4..7)])
+      sub_0 = select_two_bits_from(SDES::S0, mix[(0..3)])
+      four_bits = (sub_0 + sub_1).base10.bits(4)
+      permute(P4, four_bits)
+    end
+    def self.encrypt(input, key)
+      v4 = j1
+      v2 = j3
+      # do nothing
+      # do nothing
+      key_1, key_2 = SDES::Key.subkey(key)
+      bytes = input.each_char.map do |char|
+        round_1 = fk(permute(Initial, char.bits), key_1)
+        round_2 = fk(flip(round_1), key_2)
+        permute(Final, round_2)
+      end
+      bytes.join
     end
     def self.flip(a)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       permute(SDES::Flip, a)
     end
     def self.permute(mapping, values)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       mapping.collect { |index| values[(index.to_i - 1)] }.as_str
     end
     def self.decimal_to_binary(x, padding = 0)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       binary = x.to_i.to_s(2)
       (padding > 0) ? (binary.rjust(padding, "0")) : (binary)
     end
     def self.select_two_bits_from(mapping, bits)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
-      col = (bits[2].chr + bits[1].chr).base10
-      row = (bits[3].chr + bits[0].chr).base10
-      z = ((col + 4) * row)
-      mapping[z].to_i.bits(2)
+      col = (bits[1].chr + bits[2].chr).base10
+      row = (bits[0].chr + bits[3].chr).base10
+      mapping[((4 * row) + col)].to_i.bits(2)
     end
     def self.binary_to_decimal(x)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       x.to_i(2)
     end
     def self.rotate_left(x, shift, max_size = 8)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       max_value = ((2 ** max_size) - 1)
@@ -210,79 +205,79 @@ module SDES
   end
   module Key
     def self.j1(*args)
-      @v2 ||= 5
-      @v1 ||= 3
-      (@v1 + @v2)
-    end
-    def self.j2(*args)
       @v4 ||= 8
       @v3 ||= 6
       (@v3 + @v4)
     end
-    def self.j3(*args)
+    def self.j2(*args)
       @v2 ||= 2
       @v1 ||= 0
       (@v1 + @v2)
     end
-    def self.j4(*args)
+    def self.j3(*args)
       @v4 ||= 5
       @v3 ||= 3
       (@v3 + @v4)
+    end
+    def self.j4(*args)
+      @v2 ||= 8
+      @v1 ||= 6
+      (@v1 + @v2)
     end
     # do nothing
     # do nothing
     # do nothing
     # do nothing
     def self._p8(str)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       a = str.each_char.map { |c| c }
       Utility.permute(SDES::P8, a).to_s
     end
     def self._p10(str)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       a = str.each_char.map { |c| c }
       Utility.permute(SDES::P10, a).to_s
     end
     def self.subkey(key)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       permuted_key = _p10(key)
-      k2 = _p8((_ls3(_lo(permuted_key)) + _ls3(_hi(permuted_key))))
-      k1 = _p8((_ls1(_lo(permuted_key)) + _ls1(_hi(permuted_key))))
+      k2 = _p8((_ls3(_hi(permuted_key)) + _ls3(_lo(permuted_key))))
+      k1 = _p8((_ls1(_hi(permuted_key)) + _ls1(_lo(permuted_key))))
       [k1, k2]
     end
     def self._hi(k)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       k[(0..4)].to_s
     end
     def self._lo(k)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       k[(5..9)].to_s
     end
     def self._ls1(bits)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       Utility.rotate_left(bits.base10, 1, 5).bits(5)
     end
     def self._ls3(bits)
-      v2 = j3
       v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       Utility.rotate_left(bits.base10, 3, 5).bits(5)

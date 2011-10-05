@@ -4,49 +4,48 @@ module A
   A1 = "Sauce"
   module B
     def self.j1(*args)
+      @v4 ||= 10
       @v3 ||= 8
-      @v2 ||= 6
-      (@v2 + @v3)
+      (@v3 + @v4)
     end
     def self.j2(*args)
+      @v2 ||= 4
       @v1 ||= 2
-      @v4 ||= 0
-      (@v4 + @v1)
+      (@v1 + @v2)
     end
     def self.j3(*args)
+      @v4 ||= 7
       @v3 ||= 5
-      @v2 ||= 3
-      (@v2 + @v3)
+      (@v3 + @v4)
     end
     def self.j4(*args)
+      @v2 ||= 10
       @v1 ||= 8
-      @v4 ||= 6
-      (@v4 + @v1)
+      (@v1 + @v2)
     end
     # do nothing
     # do nothing
     # do nothing
     # do nothing
-    def self.foo(x, y)
-      v3 = j4
-      v1 = j2
-      # do nothing
-      # do nothing
-      z = 1
-      x = (5 + x)
-      y = (y * 5)
-      return (y + x)
-    end
     B1 = "Bomber"
+    def self.foo(x, y)
+      v4 = j1
+      v2 = j3
+      # do nothing
+      # do nothing
+      x = (x + 5)
+      y = (5 * y)
+      z = 1
+      return (x + y)
+    end
     def self.bar(a, b)
-      v3 = j4
-      v1 = j2
+      v4 = j1
+      v2 = j3
       # do nothing
       # do nothing
       x = foo(a, b)
       y = foo(a, b)
-      z = foo(x, y)
-      return (1 + (1 - (y + x)))
+      return ((1 - (x + y)) + 1)
     end
   end
 end
