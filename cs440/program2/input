@@ -1,0 +1,6 @@
+var foo = 1;
+var x_y_z = 123;
+var character = 'a';
+var Hey = "Is for \"horses\"";
+"string has '1'"; # commentary is for??
+'c';
