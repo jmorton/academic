@@ -3,61 +3,63 @@
 #define SYMBOL_TABLE_SIZE 128
 
 extern struct symbol** setupSymbolTable() {
-    return calloc(SYMBOL_TABLE_SIZE, sizeof(struct symbol));
+	return calloc(SYMBOL_TABLE_SIZE, sizeof(struct symbol));
 }
 
 // Calculate an index in the hashtable for the string.
 unsigned int key(char * name) {
-    unsigned int hash = 0;
-    unsigned int c;
-    while ( (c = *name++) ) hash = (hash * 7) ^ c;
-    return (hash % SYMBOL_TABLE_SIZE);
+	unsigned int hash = 0;
+	unsigned int c;
+	while ( (c = *name++) ) hash = (hash * 7) ^ c;
+	printf("Hash Key: %d\n", (hash%SYMBOL_TABLE_SIZE));
+	return (hash % SYMBOL_TABLE_SIZE);
+	return 0;
 }
 
 
 // Insert a symbol into the table
 extern int insert(struct symbol* table[], char * name, char * type) {
 
-    unsigned int index = key(name);
-    struct symbol *entry = *(&table[index]);
-    char *symbolName;
+	unsigned int index = key(name);
+	struct symbol *entry = *(&table[index]);
+	char *symbolName;
 
-    // Find an existing entry to avoid duplicate symbols.
-    for ( ; entry ; entry = entry->next ) {
-	symbolName = entry->name;
-	if (symbolName && strcmp(name, symbolName) == 0) {
+	// Find an existing entry to avoid duplicate symbols.
+	for ( ; entry ; entry = entry->next ) {
+		symbolName = entry->name;
+		if (symbolName && strcmp(name, symbolName) == 0) {
 	    return 0;
+		}
 	}
-    }
 
-    // Allocate a new symbol (on the heap) ...
-    struct symbol* new = (struct symbol*) malloc(sizeof(struct symbol));
-    new->name = name;
-    new->type = type;
-    new->next = *(&table[index]);
+	// Allocate a new symbol (on the heap) ...
+	struct symbol* s = (struct symbol*) malloc(sizeof(struct symbol));
+	s->name = name;
+	s->type = type;
+	s->next = *(&table[index]);
 
-    // ...and make it the head of this slot.
-    table[index] = new;
+	// ...and make it the head of this slot.
+	table[index] = s;
 
-    return 1;
+	return 1;
 }
 
 // Get the entry in the hash table matching the given name.  Returns
 // a symbol if it is found, otherwise null.
 extern struct symbol* lookup(struct symbol* table[], char * name) {
 
-    unsigned int index = key(name);
-    struct symbol * entry = *(&table[index]);
-    char * symbolName;
+	unsigned int index = key(name);
+	struct symbol * entry = *(&table[index]);
+	char * symbolName;
 
-    // Find an existing entry to avoid duplicate symbols.
-    for ( ; entry ; entry = entry->next ) {
-	symbolName = entry->name;
-	if (symbolName && strcmp(name, symbolName) == 0) {
+	// Find an existing entry to avoid duplicate symbols.
+	for ( ; entry ; entry = entry->next ) {
+		symbolName = entry->name;
+		if (symbolName && strcmp(name, symbolName) == 0) {
 	    return entry;
+		}
 	}
-    }
 
-    return 0;
+	return 0;
 }
 

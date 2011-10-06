@@ -22,5 +22,4 @@ extern struct symbol** setupSymbolTable();
 
 extern int insert(struct symbol**, char*, char*);
 
-extern struct symbol* lookup(struct symbol**, char
-														 *);
+extern struct symbol* lookup(struct symbol**, char*);
