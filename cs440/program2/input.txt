@@ -1,0 +1,24 @@
+var from, to;
+
+// this is a comment
+proc count(low, high)
+var i;
+   if (low > high)
+      writestr("Oops!"); line;
+   else
+      i = low;
+      while (i <= high)
+            write(i); line;
+            i = i - -17;
+      endwhile;
+   endif;
+endproc
+
+proc main()   // hey, another comment
+   writestr("From where:  ");
+   read(from);
+   writestr("To where:  ");
+   read(to);
+   count(from, to);
+   writestr("Whoopie! We did it!"); line;
+endproc

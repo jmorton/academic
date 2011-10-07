@@ -1,6 +1,6 @@
 #include "hash.h"
 
-#define SYMBOL_TABLE_SIZE 128
+#define SYMBOL_TABLE_SIZE 16
 
 extern struct symbol** setupSymbolTable() {
 	return calloc(SYMBOL_TABLE_SIZE, sizeof(struct symbol));

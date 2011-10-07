@@ -2,6 +2,21 @@
 #include <string.h>
 #include "hash.h"
 
+void display_symbols(struct symbol * table[]) {
+	struct symbol *entry;
+	char *symbolName;
+	int ix;
+
+	for ( ix = 0 ; ix < 16 ; ix++ ) {
+		entry = *(&table[ix]);
+		printf("\n%3d: ", ix);
+		for ( ; entry ; entry = entry->next ) {
+			printf(" %s", entry->name);
+		}
+	}
+  printf("\n");
+}
+
 int main(int argc, char * argv[]) {
 
 	struct symbol** symtable = setupSymbolTable();
@@ -52,7 +67,8 @@ int main(int argc, char * argv[]) {
 			// Quit
 		} else if (choice == 3) {
 	    printf("Bye!\n");
-	    return 0;
+			display_symbols(symtable);
+	    break;
 
 		} else if (choice == 4) {
 			insertResult = insert(symtable, "foo", "a");
