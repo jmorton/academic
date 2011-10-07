@@ -1,4 +1,6 @@
-build : hash.o paxi.o test
+paxi : hash.o lex.yy.c tokens.h
+	lex paxi.l
+	gcc -ggdb -o paxi lex.yy.c -ll
 
 clean : 
 	rm paxi
@@ -10,9 +12,6 @@ clean :
 libhash : hash.o
 	gcc -fPIC -ggdb -c  -Wall hash.c
 	ar rc libhash.a hash.o
-
-paxi.o : hash.o lex.yy.c tokens.h
-	gcc -ggdb -o paxi lex.yy.c -ll
 
 test: libhash
 	gcc -I. -L. -g -o test test.c hash.h hash.c -lhash
