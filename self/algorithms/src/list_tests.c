@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "list.h"
 
 // Used for example purposes...
@@ -10,7 +12,6 @@ void display(struct item *i) {
 int multiply(struct item *item) {
 	return 3 * ((int)(item->data));
 }
-
 
 int main() {
 
@@ -33,6 +34,7 @@ int main() {
 	each(stack, &display);
 
 	struct list *mapping = map(stack, &multiply);
+
 
 	printf("\nPrinting tripled stack: \n");
 	each(mapping, &display);

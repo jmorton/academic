@@ -131,6 +131,9 @@ insert(struct list *listp, struct item *itemp, int position)
 
 	// always increase the count since all cases are covered
 	++(listp->length);
+
+	return itemp;
+	
 }
 
 /* Take an item off the end of the list.  */
