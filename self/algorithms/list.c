@@ -26,9 +26,8 @@ get(struct list *listp, int index)
 	/* Adjust for the zero-index nature of lists. */
 	int distance_from_end = (listp->length-1) - index;
 
-	/* Optimization: Start at the head if it is closer
-	 * to the index than the tail, otherwise start at
-	 * the tail.
+	/* Optimization: Start at the head if it is closer to the index than
+	 * the tail, otherwise start at the tail.
 	 */
 	if ( index < distance_from_end )
 		for (p=listp->head; index-- ; p=p->next );
@@ -41,10 +40,9 @@ get(struct list *listp, int index)
 /*
  * Remove item at given position from list.
  *
- * The next item points to the previous item
- * The previous item points to the next item
- * Size decreases by one
- * Head and/or tails is updated if taken.
+ * The next item points to the previous item The previous item points
+ * to the next item Size decreases by one Head and/or tails is updated
+ * if taken.
  *
  */
 struct item*
@@ -56,7 +54,7 @@ take(struct list* listp, int position)
 	if (p == NULL)
 		return NULL;
 
-	/* The list head and tail may need to be updated. */
+	/* The list's head and tail may need to be updated. */
 	if (p == listp->tail)
 		listp->tail = p->prev;
 	if (p == listp->head)
@@ -68,7 +66,7 @@ take(struct list* listp, int position)
 	if (p->prev)
 		p->prev->next = p->next;
 
-	/* Remove references to other items in the list. */
+	/* Remove references this item has to others in the list. */
 	p->next = p->prev = NULL;
 
 	/* Reduce the length, otherwise the length is a lie. */
@@ -149,8 +147,8 @@ push(struct list *listp, struct item *itemp)
 	return insert(listp, itemp, listp->length);
 }
 
-/* Apply function to each item in the given list.  The function
- * can take any number of arguments.
+/* Apply function to each item in the given list.  The function can
+ * take any number of arguments.
  *
  */
 extern void

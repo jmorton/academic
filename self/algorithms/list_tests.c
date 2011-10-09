@@ -1,5 +1,5 @@
+#include <stdio.h>
 #include "list.h"
-
 
 // Used for example purposes...
 void display(struct item *i) {
