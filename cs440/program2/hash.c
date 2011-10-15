@@ -1,3 +1,5 @@
+/* Author: Jon Morton */
+
 #include "hash.h"
 
 #define SYMBOL_TABLE_SIZE 16
@@ -51,15 +53,14 @@ extern struct symbol* lookup(struct symbol* table[], char * name) {
 	unsigned int index = key(name);
 	struct symbol * entry = *(&table[index]);
 	char * symbolName;
-
+    
 	// Find an existing entry to avoid duplicate symbols.
-	for ( ; entry ; entry = entry->next ) {
+    for ( ; entry ; entry = entry->next ) {
 		symbolName = entry->name;
 		if (symbolName && strcmp(name, symbolName) == 0) {
 	    return entry;
 		}
 	}
-
+    
 	return 0;
 }
-
