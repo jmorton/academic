@@ -8,4 +8,4 @@ lex.yy.c :
 	lex paxi.l
 
 paxi.tab.c :
-	bison -d paxi.y
+	bison -t -d paxi.y
