@@ -38,11 +38,11 @@ write        return(tWRITE);
 "+"          return('+'); 
 "-"          return('-'); 
 "*"          return('*'); 
-"/"          return(tDIV); 
-"="          return(tEQ); 
-"<"          return('<'); 
+"/"          return('/'); 
+"="          return('='); 
 "<="         return(tLTE); 
 ">="         return(tGTE); 
+"<"          return('<'); 
 ">"          return('>'); 
 "#"          return('#'); 
 "("          return('('); 
@@ -53,13 +53,13 @@ write        return(tWRITE);
 ";"          return(tSEMI); 
 "\""         return(tDQUOTE); 
 "'"          return(tSQUOTE); 
-{comment}    return(tCOMMENT);
+{comment}    {} // return(tCOMMENT);
 {identifier} { identifier();              return(tID);      }
 {integer}    { integer();                 return(tINT);     }
 {string}     { string();                  return(tSTRING);  }
 {character}  { character();               return(tCHAR);    }
 {newline}    { increment_newline();       }
-.            { printf("Fatal Lexing Error"); return 0;      }
+.            { printf("Fatal Lexing Error on %d", global_line_count); return 0;      }
 
 %%
 
@@ -86,7 +86,10 @@ int string() {
 }
 
 int character() {
-  yylval.str = yytext;
+  char *substring = (char*) malloc(sizeof(char)*yyleng-1);
+  strncpy(substring, yytext+1, yyleng-2);
+  strings[string_count++] = substring;
+  yylval.str = substring;
   return 0;
 }
 

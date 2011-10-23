@@ -1,5 +1,5 @@
 parser : lex.yy.c paxi.tab.c
-	gcc  paxi.tab.c  lex.yy.c  -o parser
+	gcc  hash.c paxi.tab.c  lex.yy.c  -o parser
 
 clean : 
 	rm lex.yy.c paxi.tab.h paxi.tab.c parser
