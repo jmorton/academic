@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include "hash.h"
 
+#define INFO_TOP    "%-20s\t%4s \t %4s \t %4s\n"
+#define INFO_FORMAT "%-20s\t%4d \t %4d \t %4d\n"
+
 // This is defined in paxi.l but used when an error occurs
 // to provide some more information about where stuff went
 // down hill.
@@ -16,22 +19,28 @@ int paxi_procedure_variable_count = 0;
 int paxi_static_memory_index = 510;
 char *paxi_current_scope;
 
+// Declarations for paxi related functions that take actions
+// based on parsing.
 char* mangle_var_name();
 int allocate(int);
 void handle_global(void);
+void handle_array(char*, int);
 void handle_procedure(void);
 void handle_parameter(void);
 void handle_local_variable(void);
 void enter_procedure(void);
+void duplicate_symbol_error(void);
 
+// Yep, it's a symbol table alright.
 struct symbol** symtable;
 
+// These make type information smaller to store and faster to check
+// (rather than using a string).
 enum types
 {
   variable_type, array_type, procedure_type, parameter_type, local_type
 }; 
  
-
 int yywrap() {
   return 1;
 }
@@ -95,231 +104,189 @@ program: globals_list procedure_list ;
 
 /* production-1 */
 globals_list: /* epsilon */
-	| 	globals_list globals_decl
-	;
+  |   globals_list globals_decl
+  ;
  
 /* production-2 */
-globals_decl:	global_var_decl
-	| 	array_decl
-	;
+globals_decl:   global_var_decl
+  |   array_decl
+  ;
 
 /* production-3 */
 global_var_decl: tVAR global_var_list tSEMI
-		;
+    ;
 
 /* production-4 */
 global_var_list: global_var_list tCOMMA tID { handle_global(); }
-	| 	tID { handle_global(); }
-	;
+  |   tID { handle_global(); }
+  ;
 
 array_decl: tARRAY array_list tSEMI
-	;
+  ;
 
-array_list:	array_list tCOMMA  single_array 
-	| 	single_array
-	;
+array_list:   array_list tCOMMA  single_array 
+  |   single_array
+  ;
 
-single_array:	tINT tID 
-{
-	if (! lookup(symtable, yylval.str))
-		{		
-			char *name = (char*)malloc(sizeof(char)*yylen);
-			name = strcpy(name, yylval.str);
-			int type = array_type;
-			int size = $<val>1;
-			int location = allocate(size);
-			int result = insert(symtable, name, type, size, location);
-			printf("Array: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
-		}
-  else
-    {
-			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
-		}	
-};
+single_array:   tINT tID { handle_array(yylval.str, $<val>1); };
 
 procedure_list: /* nothing */
-	| 	procedure_list procedure_decl
-	;
+  |   procedure_list procedure_decl
+  ;
 
 /* proc main() ... endproc */
 procedure_decl: tPROC tID
-{
-	paxi_current_scope = (char*)malloc(sizeof(char)*yylen);
-	paxi_current_scope = strcpy(paxi_current_scope, $<str>2);
-	paxi_procedure_arity = 0;
-	paxi_procedure_variable_count = 0;
-}
-'(' formal_parameters ')' locals_list statement_list tENDPROC
-{ 
-		handle_procedure();
-}
-	;
+    {
+        paxi_current_scope = (char*)malloc(sizeof(char)*yylen);
+        paxi_current_scope = strcpy(paxi_current_scope, $<str>2);
+        paxi_procedure_arity = 0;
+        paxi_procedure_variable_count = 0;
+    }
+  '(' formal_parameters ')' locals_list statement_list tENDPROC
+    { handle_procedure(); }
+  ;
 
 formal_parameters: /* nothing */
-	| 	formal_list
-	;
+  |   formal_list
+  ;
 
-formal_list: formal_list tCOMMA tID 
-{ 
-	handle_parameter();
-}
-| 	tID 
-{ 
-	handle_parameter();
-}
-;
+formal_list: formal_list tCOMMA tID { handle_parameter(); }
+  |  tID { handle_parameter(); }
+  ;
 
-locals_list:/* 	nothing */ 
-	| 	locals_list local_decl
-	;
+locals_list:/*    nothing */ 
+  |   locals_list local_decl
+  ;
 
-local_decl:	tVAR local_var_list tSEMI
-	;
+local_decl:   tVAR local_var_list tSEMI
+  ;
 
-local_var_list:	local_var_list tCOMMA tID
-	| 	tID
-{
-		handle_local_variable();
-}
+local_var_list:   local_var_list tCOMMA tID
+  |   tID { handle_local_variable(); }
 ;
 
 statement_list: /* nothing */
-	| 	statement_list statement tSEMI
-	;
+  |   statement_list statement tSEMI
+  ;
  
-statement:	assignment 
-	| 	conditional 
-	| 	loop 
-	| 	io 
-	| 	call 
-	| 	return_value
-	;
+statement:  assignment 
+  |   conditional 
+  |   loop 
+  |   io 
+  |   call 
+  |   return_value
+  ;
 
-assignment:	variable '=' arithmetic_expression
-	;
+assignment:   variable '=' arithmetic_expression
+  ;
 
-conditional:	tIF boolean_expression statement_list else_clause tENDIF
-	;
+conditional:  tIF boolean_expression statement_list else_clause tENDIF
+  ;
 
-else_clause:	/* nothing */
-	| 	tELSE statement_list
-	;
+else_clause:  /* nothing */
+  |   tELSE statement_list
+  ;
 
-loop:		while_loop | do_loop
-	;
+loop:     while_loop | do_loop
+  ;
 
-while_loop:	tWHILE boolean_expression statement_list tENDWHILE
-	;
+while_loop:   tWHILE boolean_expression statement_list tENDWHILE
+  ;
 
-do_loop:	tDO statement_list tENDO tWHILE boolean_expression
-	;
+do_loop:  tDO statement_list tENDO tWHILE boolean_expression
+  ;
 
-io:		read_statement 
-	| 	write_statement 
-	| 	line_statement
-	;
+io:     read_statement 
+  |   write_statement 
+  |   line_statement
+  ;
 
-call:		tID '(' actual_parameters ')'
-	;
+call:     tID '(' actual_parameters ')'
+  ;
 
-return_value:	tRETVAL arithmetic_expression
-	;
+return_value:   tRETVAL arithmetic_expression
+  ;
 
-actual_parameters:		/* nothing */
-	|	parameter_list
-	;
+actual_parameters:    /* nothing */
+  |   parameter_list
+  ;
 
-parameter_list:	parameter_list tCOMMA arithmetic_expression
-	|	arithmetic_expression
-	;
+parameter_list:   parameter_list tCOMMA arithmetic_expression
+  |   arithmetic_expression
+  ;
 
-quantity:	variable 
-	| 	tINT
-	|	call
-	|	tCHAR
-	;
+quantity:   variable 
+  |   tINT
+  |   call
+  |   tCHAR
+  ;
 
-variable:	tID
-	|	tID '[' arithmetic_expression ']'
-	;
+variable:   tID
+  |   tID '[' arithmetic_expression ']'
+  ;
 
-read_statement:	tREAD '(' variable ')'
-	|	tREADSTR '(' tID ')'
-	;
+read_statement:   tREAD '(' variable ')'
+  |   tREADSTR '(' tID ')'
+  ;
 
 write_statement:
-		tWRITE '(' arithmetic_expression ')'
-	|	tWRITESTR '(' tSTRING ')'
-	|	tWRITESTR '(' tID ')'
-	;
+    tWRITE '(' arithmetic_expression ')'
+  |   tWRITESTR '(' tSTRING ')'
+  |   tWRITESTR '(' tID ')'
+  ;
 
-line_statement:	tLINE
-	;
+line_statement:   tLINE
+  ;
 
 arithmetic_expression:
-		arithmetic_expression add_operator arithmetic_term
-	|	arithmetic_term
-	;
+    arithmetic_expression add_operator arithmetic_term
+  |   arithmetic_term
+  ;
 
 arithmetic_term:
-		arithmetic_term mult_operator arithmetic_factor
-	|	arithmetic_factor
-	;
+    arithmetic_term mult_operator arithmetic_factor
+  |   arithmetic_factor
+  ;
 
 arithmetic_factor:
-		quantity
-	|	'(' arithmetic_expression ')'
-	;
+    quantity
+  |   '(' arithmetic_expression ')'
+  ;
 
-add_operator:	'+' 
-	|       '-'
-	;
+add_operator:   '+' 
+  |       '-'
+  ;
 
-mult_operator:	'*' 
-	|	'/'
-	;
+mult_operator:  '*' 
+  |   '/'
+  ;
 
 boolean_expression:
-		boolean_expression tOR boolean_term
-	|	boolean_term
-	;
+    boolean_expression tOR boolean_term
+  |   boolean_term
+  ;
 
-boolean_term:	boolean_term tAND boolean_factor
-	|	boolean_factor
-	;
+boolean_term:   boolean_term tAND boolean_factor
+  |   boolean_factor
+  ;
 
-boolean_factor:	tNOT boolean_atom
-	|	boolean_atom
-	;
+boolean_factor:   tNOT boolean_atom
+  |   boolean_atom
+  ;
 
-boolean_atom:	'(' arithmetic_expression relational_operator arithmetic_expression ')'
-	|	'(' boolean_expression ')'
-	;
+boolean_atom:   '(' arithmetic_expression relational_operator arithmetic_expression ')'
+  |   '(' boolean_expression ')'
+  ;
 
 relational_operator: '='
-	|	'<'
-	|	'>'
-	|	'#'
-	|	tGTE
-	|	tLTE
-	;
+  |   '<'
+  |   '>'
+  |   '#'
+  |   tGTE
+  |   tLTE
+  ;
 
 %%
-
-/* Turns whatever is in yylval.str into a mangled representation.
-   Allocates memory for the mangled string too since it has to
-   calculate the amount of space need given the current procedure
-   name.	Behavior isn't defined when yylval isn't a string and when
-   we aren't in the scope of a procedure.
-*/
-char* mangle_var_name()
-{
-	char *name = (char*)malloc( strlen(yylval.str)+strlen(paxi_current_scope) );
-	strcpy(name, yylval.str);
-	strcat(name, "@");
-	strcat(name, paxi_current_scope);
-	return name;
-}
 
 void handle_global(void)
 {
@@ -327,92 +294,130 @@ void handle_global(void)
   // the symbol table is not (and should not) be capable of allocating
   // memory, we need to check for the existence of the global variable
   // before allocating space for it.
-	if (! lookup(symtable, yylval.str))
-		{		
-			char *name = (char*)malloc(strlen(yylval.str));
-			name = strcpy(name, yylval.str);
-			int type = parameter_type;
-			int size = 1;
-			int location = allocate(size);
-			int result = insert(symtable, name, type, size, location);
-			printf("Variable: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
-		}
+  if (! lookup(symtable, yylval.str))
+    {     
+      char *name = (char*)malloc(strlen(yylval.str));
+      name = strcpy(name, yylval.str);
+      int type = parameter_type;
+      int size = 1;
+      int location = allocate(size);
+      int result = insert(symtable, name, type, size, location);
+      printf(INFO_FORMAT, name, size, location, type);
+    }
   else
     {
-			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
-		}	
+      duplicate_symbol_error();
+    }   
 }
 
 /* Reset variables used by other functions that assume
-	 a "fresh start" within the scope of a procedure.
+   a "fresh start" within the scope of a procedure.
 */
 void enter_procedure(void) 
 {
-//	printf("Procedure named %s.\n", $<str>2);
+//  printf("Procedure named %s.\n", $<str>2);
 }
 
 void handle_procedure(void)
 {
-	if (! lookup(symtable, yylval.str))
-		{		
-			int type = procedure_type;
-			int size = paxi_procedure_arity;
-			int location = 0; // what is the location??
-			int result = insert(symtable, paxi_current_scope, type, size, location);
-			printf("Procedure: %d - name: %s, size: %d, location: %d, type: %d \n", result, paxi_current_scope, size, location, type);
-		}
+  if (! lookup(symtable, yylval.str))
+    {     
+      int type = procedure_type;
+      int size = paxi_procedure_arity;
+      int location = 0; // what is the location??
+      int result = insert(symtable, paxi_current_scope, type, size, location);
+      printf(INFO_FORMAT, paxi_current_scope, size, location, type);
+    }
   else
     {
-			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
-		}
+      duplicate_symbol_error();
+    }
+}
+
+void handle_array(char *str, int size)
+{
+  if (! lookup(symtable, yylval.str))
+    {     
+      char *name = (char*)malloc(strlen(str));
+      name = strcpy(name, yylval.str);
+      int type = array_type;
+      int location = allocate(size);
+      int result = insert(symtable, name, type, size, location);
+      printf(INFO_FORMAT, name, size, location, type);
+    }
+  else
+    {
+      duplicate_symbol_error();
+    }
 }
 
 void handle_parameter(void)
 {
-	char *name = mangle_var_name();
-	if (! lookup(symtable, name))
-		{
+  char *name = mangle_var_name();
+  if (! lookup(symtable, name))
+    {
       paxi_procedure_arity++;
-			int type = parameter_type;
-			int size = 1;
-			int location = paxi_procedure_arity;
-			int result = insert(symtable, name, type, size, location);
-			printf("Parameter: %d. name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
-		}
+      int type = parameter_type;
+      int size = 1;
+      int location = paxi_procedure_arity;
+      int result = insert(symtable, name, type, size, location);
+      printf(INFO_FORMAT, name, size, location, type);
+    }
   else
     {
-			printf("Parameter already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
-		}
+      duplicate_symbol_error();
+    }
 }
 
 void handle_local_variable(void)
 {
-	char *name = mangle_var_name();
-	if (! lookup(symtable, name))
-		{
-			paxi_procedure_variable_count += 1;
-			int type = local_type;
-			int size = 1;
-			int location = paxi_procedure_variable_count;
-			int result = insert(symtable, name, type, size, location);
-			printf("Local Variable: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
-		}
+  char *name = mangle_var_name();
+  if (! lookup(symtable, name))
+    {
+      paxi_procedure_variable_count += 1;
+      int type = local_type;
+      int size = 1;
+      int location = paxi_procedure_variable_count;
+      int result = insert(symtable, name, type, size, location);
+      printf(INFO_FORMAT, name, size, location, type);
+    }
   else
     {
-			printf("Local variable already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
-		}
+      duplicate_symbol_error();
+    }
 }
 
 /* Reserves space for global variables and arrays. */ 
 int allocate(int space) 
 {
-	// TODO: add check for when space runs out!
-	int location = paxi_static_memory_index;
-	paxi_static_memory_index += space;
-	return location;
+  // TODO: add check for when space runs out!
+  int location = paxi_static_memory_index;
+  paxi_static_memory_index += space;
+  return location;
+}
+
+/* Turns whatever is in yylval.str into a mangled representation.
+   Allocates memory for the mangled string too since it has to
+   calculate the amount of space need given the current procedure
+   name.  Behavior isn't defined when yylval isn't a string and when
+   we aren't in the scope of a procedure.
+*/
+char* mangle_var_name(void)
+{
+  char *name = (char*)malloc( strlen(yylval.str)+strlen(paxi_current_scope) );
+  strcpy(name, yylval.str);
+  strcat(name, "@");
+  strcat(name, paxi_current_scope);
+  return name;
+}
+
+void duplicate_symbol_error(void)
+{
+  printf("%-20s  **Identifer already in use**\n", yylval.str);
 }
 
 int main() {
+  printf(INFO_TOP, "Sym. Table Name", "Size", "Location", "Type");
   symtable = setupSymbolTable();
   yydebug = 0;
   yyparse();
