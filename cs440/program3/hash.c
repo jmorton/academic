@@ -13,14 +13,12 @@ unsigned int key(char * name) {
 	unsigned int hash = 0;
 	unsigned int c;
 	while ( (c = *name++) ) hash = (hash * 7) ^ c;
-	printf("Hash Key: %d\n", (hash%SYMBOL_TABLE_SIZE));
 	return (hash % SYMBOL_TABLE_SIZE);
-	return 0;
 }
 
 
 // Insert a symbol into the table
-extern int insert(struct symbol* table[], char * name, char * type) {
+extern int insert(struct symbol* table[], char * name, int type, int size, int location) {
 
 	unsigned int index = key(name);
 	struct symbol *entry = *(&table[index]);
