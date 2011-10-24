@@ -1,0 +1,15 @@
+proc main(a,b,c)
+  var pirates;
+endproc
+
+proc foo(x1,y1,z1)
+  var a;
+  var b;
+  var ahoy;
+endproc
+
+proc bar(x2,y2,z2)
+  var a;
+  var b;
+	var matey;
+endproc

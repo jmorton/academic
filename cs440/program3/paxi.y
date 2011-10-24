@@ -8,7 +8,29 @@
 // down hill.
 extern int global_line_count;
 
+// Used to keep track of the number of parameters for each
+// procedure.  Reset at the beginning of a procedure and
+// incremented as each parameter is parsed.
+int paxi_procedure_arity = 0;
+int paxi_procedure_variable_count = 0;
+int paxi_static_memory_index = 510;
+char *paxi_current_scope;
+
+char* mangle_var_name();
+int allocate(int);
+void handle_global(void);
+void handle_procedure(void);
+void handle_parameter(void);
+void handle_local_variable(void);
+void enter_procedure(void);
+
 struct symbol** symtable;
+
+enum types
+{
+  variable_type, array_type, procedure_type, parameter_type, local_type
+}; 
+ 
 
 int yywrap() {
   return 1;
@@ -65,24 +87,29 @@ void yyerror(const char * str) {
 %token tNEWLINE
 %token tCOMMENT
 
+%type<val> single_array tINT
+
 %%
 
 program: globals_list procedure_list ;
 
+/* production-1 */
 globals_list: /* epsilon */
 	| 	globals_list globals_decl
 	;
  
+/* production-2 */
 globals_decl:	global_var_decl
 	| 	array_decl
 	;
 
+/* production-3 */
 global_var_decl: tVAR global_var_list tSEMI
 		;
 
-global_var_list: global_var_list tCOMMA tID
-	| 	tID
-		{ printf("Create a symbol"); }
+/* production-4 */
+global_var_list: global_var_list tCOMMA tID { handle_global(); }
+	| 	tID { handle_global(); }
 	;
 
 array_decl: tARRAY array_list tSEMI
@@ -93,8 +120,22 @@ array_list:	array_list tCOMMA  single_array
 	;
 
 single_array:	tINT tID 
-		{ printf("Allocate array\n"); }
-	;
+{
+	if (! lookup(symtable, yylval.str))
+		{		
+			char *name = (char*)malloc(sizeof(char)*yylen);
+			name = strcpy(name, yylval.str);
+			int type = array_type;
+			int size = $<val>1;
+			int location = allocate(size);
+			int result = insert(symtable, name, type, size, location);
+			printf("Array: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
+		}
+  else
+    {
+			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
+		}	
+};
 
 procedure_list: /* nothing */
 	| 	procedure_list procedure_decl
@@ -102,18 +143,31 @@ procedure_list: /* nothing */
 
 /* proc main() ... endproc */
 procedure_decl: tPROC tID
-		{ printf("Procedure named %s.\n", $<str>2); }
-                '(' formal_parameters ')' locals_list statement_list tENDPROC
-		{ printf("Procedure declared.\n"); }
+{
+	paxi_current_scope = (char*)malloc(sizeof(char)*yylen);
+	paxi_current_scope = strcpy(paxi_current_scope, $<str>2);
+	paxi_procedure_arity = 0;
+	paxi_procedure_variable_count = 0;
+}
+'(' formal_parameters ')' locals_list statement_list tENDPROC
+{ 
+		handle_procedure();
+}
 	;
 
 formal_parameters: /* nothing */
 	| 	formal_list
 	;
 
-formal_list: formal_list tCOMMA tID                  
-	| 	tID
-	;
+formal_list: formal_list tCOMMA tID 
+{ 
+	handle_parameter();
+}
+| 	tID 
+{ 
+	handle_parameter();
+}
+;
 
 locals_list:/* 	nothing */ 
 	| 	locals_list local_decl
@@ -124,7 +178,10 @@ local_decl:	tVAR local_var_list tSEMI
 
 local_var_list:	local_var_list tCOMMA tID
 	| 	tID
-	;
+{
+		handle_local_variable();
+}
+;
 
 statement_list: /* nothing */
 	| 	statement_list statement tSEMI
@@ -248,6 +305,112 @@ relational_operator: '='
 	;
 
 %%
+
+/* Turns whatever is in yylval.str into a mangled representation.
+   Allocates memory for the mangled string too since it has to
+   calculate the amount of space need given the current procedure
+   name.	Behavior isn't defined when yylval isn't a string and when
+   we aren't in the scope of a procedure.
+*/
+char* mangle_var_name()
+{
+	char *name = (char*)malloc( strlen(yylval.str)+strlen(paxi_current_scope) );
+	strcpy(name, yylval.str);
+	strcat(name, "@");
+	strcat(name, paxi_current_scope);
+	return name;
+}
+
+void handle_global(void)
+{
+  // It is possible that the global has already been allocated.  Since
+  // the symbol table is not (and should not) be capable of allocating
+  // memory, we need to check for the existence of the global variable
+  // before allocating space for it.
+	if (! lookup(symtable, yylval.str))
+		{		
+			char *name = (char*)malloc(strlen(yylval.str));
+			name = strcpy(name, yylval.str);
+			int type = parameter_type;
+			int size = 1;
+			int location = allocate(size);
+			int result = insert(symtable, name, type, size, location);
+			printf("Variable: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
+		}
+  else
+    {
+			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
+		}	
+}
+
+/* Reset variables used by other functions that assume
+	 a "fresh start" within the scope of a procedure.
+*/
+void enter_procedure(void) 
+{
+//	printf("Procedure named %s.\n", $<str>2);
+}
+
+void handle_procedure(void)
+{
+	if (! lookup(symtable, yylval.str))
+		{		
+			int type = procedure_type;
+			int size = paxi_procedure_arity;
+			int location = 0; // what is the location??
+			int result = insert(symtable, paxi_current_scope, type, size, location);
+			printf("Procedure: %d - name: %s, size: %d, location: %d, type: %d \n", result, paxi_current_scope, size, location, type);
+		}
+  else
+    {
+			printf("Identifier already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
+		}
+}
+
+void handle_parameter(void)
+{
+	char *name = mangle_var_name();
+	if (! lookup(symtable, name))
+		{
+      paxi_procedure_arity++;
+			int type = parameter_type;
+			int size = 1;
+			int location = paxi_procedure_arity;
+			int result = insert(symtable, name, type, size, location);
+			printf("Parameter: %d. name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
+		}
+  else
+    {
+			printf("Parameter already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
+		}
+}
+
+void handle_local_variable(void)
+{
+	char *name = mangle_var_name();
+	if (! lookup(symtable, name))
+		{
+			paxi_procedure_variable_count += 1;
+			int type = local_type;
+			int size = 1;
+			int location = paxi_procedure_variable_count;
+			int result = insert(symtable, name, type, size, location);
+			printf("Local Variable: %d - name: %s, size: %d, location: %d, type: %d \n", result, name, size, location, type);
+		}
+  else
+    {
+			printf("Local variable already defined.  Nothing allocated for '%s'.  Is this a syntax error?\n", yylval.str);
+		}
+}
+
+/* Reserves space for global variables and arrays. */ 
+int allocate(int space) 
+{
+	// TODO: add check for when space runs out!
+	int location = paxi_static_memory_index;
+	paxi_static_memory_index += space;
+	return location;
+}
 
 int main() {
   symtable = setupSymbolTable();
