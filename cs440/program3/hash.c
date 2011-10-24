@@ -36,6 +36,7 @@ extern int insert(struct symbol* table[], char * name, int type, int size, int l
 	struct symbol* s = (struct symbol*) malloc(sizeof(struct symbol));
 	s->name = name;
 	s->type = type;
+  s->location = location;
 	s->next = *(&table[index]);
 
 	// ...and make it the head of this slot.

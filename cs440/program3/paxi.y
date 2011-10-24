@@ -30,9 +30,13 @@ void handle_parameter(void);
 void handle_local_variable(void);
 void enter_procedure(void);
 void duplicate_symbol_error(void);
+int  reference(char*, int);
 
 // Yep, it's a symbol table alright.
 struct symbol** symtable;
+
+// Here's where generated code is stored.
+
 
 // These make type information smaller to store and faster to check
 // (rather than using a string).
@@ -396,11 +400,45 @@ int allocate(int space)
   return location;
 }
 
+/* Returns the location the symbol references.  Performs a check
+   to make sure the symbol referenced is semantically correct.
+*/
+int reference(char *name, int type)
+{
+  char *mangled_name = mangle_var_name();
+	struct symbol *sym = lookup(symtable, mangled_name);
+  free(mangled_name); // or else we leak memory...
+  
+  // If nothing was found, try finding the global variable.
+	if (sym == NULL)
+		{
+		  sym = lookup(symtable, name);
+		}
+
+  // if still nothing was found, return NULL to indicate nothing found.
+	if (sym == NULL)
+    {
+      return NULL;
+    }
+  // if something was found, but it wasn't the specified type, bail out.
+  else if (sym->type != type)
+    {
+      return NULL;
+    } 
+  // otherwise provide the location to the caller.
+  else
+    {
+      return sym->location;
+    }
+}
+
 /* Turns whatever is in yylval.str into a mangled representation.
    Allocates memory for the mangled string too since it has to
    calculate the amount of space need given the current procedure
    name.  Behavior isn't defined when yylval isn't a string and when
    we aren't in the scope of a procedure.
+
+   Used during initialization *AND* reading of variables.
 */
 char* mangle_var_name(void)
 {
@@ -421,5 +459,8 @@ int main() {
   symtable = setupSymbolTable();
   yydebug = 0;
   yyparse();
+	printf("triple: %d\n", reference("triple",1));
+	printf("z1@foo: %d\n", reference("z1@foo",3));
+	printf("main: %d\n", reference("main",2));
   return 0;
 }
