@@ -1,0 +1,26 @@
+//  CS 440, Sample PAXI program for Program 3
+//  When the program displays the prompt "-> "
+//  enter an integer.
+
+array 4 prompt;
+var a, b;
+array 3 vals;
+
+proc main()
+// the next four lines put as string into prompt[]
+   prompt[0] = '-';
+   prompt[1] = '>';
+   prompt[2] = 'a';
+   prompt[3] = 0;
+   writestr(prompt);
+   read(vals[0]);
+   a = 5;
+   b = -1;
+   vals[2] = 3 * (vals[0] - b);
+   write(a); line;
+   write(b); line;
+   write(vals[0]); line;
+   write(vals[2]); line;
+endproc
+
+
