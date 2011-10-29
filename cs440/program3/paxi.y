@@ -1,16 +1,24 @@
 /* Jon Morton
    CS440
    Program 3
+
+   The major pieces of this parser (aside from the usual grammar, etc...) is a:
+   - symbol table
+   - code store
+    
+   The parser has fundamental operations:
+   - allocate:
+   - store
+   - generate: add opcodes to the code store
+   - reference
+   - mangle
+
  */
 %{
 #define YYDEBUG 1
 #include <stdio.h>
 #include "hash.h"
-
-#define INFO_TOP    "%-20s\t%4s \t %4s \t %4s\n"
-#define INFO_FORMAT "%-20s\t%4d \t %4d \t %4d\n"
-int TEMP1= 508;
-int TEMP2= 509;
+#include "opcodes.h"
 
 // This is defined in paxi.l but used when an error occurs
 // to provide some more information about where stuff went
@@ -35,41 +43,33 @@ void  handle_array(char*, int);
 void  handle_procedure(void);
 void  handle_parameter(void);
 void  handle_local_variable(void);
-int   handle_arithmetic(char*, int, int);
-void  handle_line(void);
-void  handle_write(int);
-void  handle_writestr(int);
-void  enter_procedure(void);
 void  duplicate_symbol_error(void);
-void  generate(int a, int b, int c, char*);
 struct symbol* reference(char*, int);
 
-// Here's where generated code is stored.
-int store(int, int, int);
-int retrieve(int);
-int paxi_code[4096];
-static int paxi_code_length = 0;
+// Addresses for temporary memory.  Used by opcodes to derefence memory
+// and perform arithmetic.
+static int TEMP0 = 500, TEMP1 = 501, TEMP2 = 502, TEMP3 = 503, TEMP4 = 504,
+           TEMP5 = 505, TEMP6 = 506, TEMP7 = 507, TEMP8 = 508, TEMP9 = 509;
 
-// Yep, it's a symbol table alright.
+/* Symbol table and code store */
+void  generate(int, int, int);
+int   retrieve(int);
+int   paxi_code[4096];
+static int paxi_code_length = 0;
 struct symbol** symtable;
 
-// Adds three integers to the code store array.
-int store(int a, int b, int c) {
-  paxi_code[paxi_code_length++] = a;
-  paxi_code[paxi_code_length++] = b;
-  paxi_code[paxi_code_length++] = c;
-}
-
-// Retrieves one integer from the code store array.
-int retrieve(int index) {
-  return paxi_code[index];
-}
-
-// These make type information smaller to store and faster to check
-// (rather than using a string).
+/* These make type information smaller to store and faster to check
+   (rather than using a string). By using powers of two, we can use
+   bit masks to indicate that a referenced symbol can be any of a set
+   of types.
+*/
 enum types
 {
-  variable_type, array_type, procedure_type, parameter_type, local_type
+  variable_type  =  1,
+  array_type     =  2,
+  local_type     =  4,
+  parameter_type =  8, 
+  procedure_type = 16
 }; 
  
 int yywrap() {
@@ -208,9 +208,9 @@ statement: assignment
 /* variable: leave nothing. */
 assignment: variable '=' arithmetic_expression {
               $<val>$ = $<val>1;
-              generate(27, TEMP1,     0, "popd"); // the value
-              generate(27, TEMP2,     0, "popd"); // the variable address indirect
-              generate(4,  TEMP2, TEMP1, "mit" );
+              generate(POPD_OP, TEMP1,     0); // the value
+              generate(POPD_OP, TEMP2,     0); // the variable address indirect
+              generate(MIT_OP,  TEMP2, TEMP1);
             }
   ;
 
@@ -252,19 +252,19 @@ parameter_list: parameter_list tCOMMA arithmetic_expression
 
 quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
             $<val>$ = $<val>1;
-            generate( 27, TEMP1, 0,     "popd"); // turn into value
-            generate(  3, TEMP2, TEMP1, "mif" ); // dereference
-            generate( 24, TEMP2, 0,     "pushd");
+            generate( POPD_OP, TEMP1, 0); // turn into value
+            generate( MIF_OP, TEMP2, TEMP1); // dereference
+            generate( PUSHD_OP, TEMP2, 0);
           }
   |       tINT { /* push value in $1 */
             $<val>$ = $<val>1;
-            generate( 26, $<val>1, 0, "pushi" );
+            generate( PUSHI_OP, $<val>1, 0);
           }
   |       call { /* nothing yet */ 
           }
   |       tCHAR {
             $<val>$ = $<val>1;
-            generate( 26, $<val>1, 0, "pushi" );
+            generate( PUSHI_OP, $<val>1, 0);
           }
   ;
 
@@ -273,49 +273,48 @@ quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
 /* Stack Policy: leaves an ADDRESS */
 variable: tID {
             $<val>$ = (reference($<str>1, variable_type)->location);
-            generate( 26, $<val>$, 0, "pushi" );
+            generate( PUSHI_OP, $<val>$, 0);
           }
   |       tID '[' arithmetic_expression ']' {
             $<val>$ = (reference($<str>1, array_type)->location);
-            generate( 26, $<val>$,   0, "pushi" );     // move array address onto stack
-            generate( 27, TEMP1,     0, "popd"  );     // move tID address to temp
-            generate( 27, TEMP2,     0, "popd"  );     // move arithmetic_expr into temp
-            generate(  9, TEMP1, TEMP2, "add"   );     // calculate the offset
-            generate( 24, TEMP1,     0, "pushd" );     // leave calculated addr on stack
+            generate( PUSHI_OP, $<val>$,   0);     // move array address onto stack
+            generate( POPD_OP, TEMP1,     0);     // move tID address to temp
+            generate( POPD_OP, TEMP2,     0);     // move arithmetic_expr into temp
+            generate( ADD_OP, TEMP1, TEMP2);     // calculate the offset
+            generate( PUSHD_OP, TEMP1,     0);     // leave calculated addr on stack
           }
   ;
 
 /* Leave nothing */
 read_statement: tREAD '(' variable ')' {
-                  //generate(33, reference($<str>3, array_type)->location, 0, "tgets");
-                  generate(33, $<val>3, 0, "tgets");
+                  generate(GETS_OP, $<val>3, 0);
                 }
   |   tREADSTR '(' tID ')'
   ;
 
 /* Leave nothing */
 write_statement: tWRITE '(' arithmetic_expression ')' {
-                   generate(27, TEMP2, 0,      "popd");
-                   generate( 1, TEMP1, TEMP2,  "mov");
-                   generate(29, TEMP1, 0,      "puti");
+                   generate(POPD_OP, TEMP2, 0);
+                   generate( MOV_OP, TEMP1, TEMP2);
+                   generate(PUTI_OP, TEMP1, 0);
                  }
   |              tWRITESTR '(' tSTRING ')' { }
   |              tWRITESTR '(' tID ')' {
-                   // generate(30, location, 0, "puts");
-                   // handle_writestr(reference($<str>3, array_type)->location);
+                   $<val>$ = (reference($<str>1, variable_type)->location);
+                   generate(PUTS_OP, $<val>$, 0);
                  }
   ;
 
-line_statement: tLINE { handle_line(); }
+line_statement: tLINE { generate(LINE_OP, 0, 0); }
   ;
 
 /* Stack Policy: leaves a VALUE */
 arithmetic_expression:
       arithmetic_expression add_operator arithmetic_term {
-        generate( 27, TEMP1,   0, "popd" );   // move term into addr (order?)
-        generate( 27, TEMP2,   0, "popd" );   // move expr into addr (order?)
-        generate(  9, TEMP1, TEMP2, "add"  );   // calculate the sum
-        generate( 24, TEMP1,   0, "pushd" );   // move the result onto the stack
+        generate( POPD_OP,  TEMP1,   0);   // move term into addr (order?)
+        generate( POPD_OP,  TEMP2,   0);   // move expr into addr (order?)
+        generate( ADD_OP,   TEMP1, TEMP2);   // calculate the sum
+        generate( PUSHD_OP, TEMP1,   0);   // move the result onto the stack
         $<val>$ = TEMP1;
       }
   |   arithmetic_term
@@ -324,10 +323,10 @@ arithmetic_expression:
 /* Stack Policy: leaves a VALUE */
 arithmetic_term:
       arithmetic_term mult_operator arithmetic_factor {
-        generate( 27, TEMP1,   0, "popd" );   // move term into addr (order?)
-        generate( 27, TEMP2,   0, "popd" );   // move expr into addr (order?)
-        generate( 12, TEMP1, TEMP2, "mul"  );   // calculate the sum
-        generate( 24, TEMP1,   0, "pushd" );   // move the result onto the stack
+        generate( POPD_OP, TEMP1,   0);   // move term into addr (order?)
+        generate( POPD_OP, TEMP2,   0);   // move expr into addr (order?)
+        generate( MUL_OP, TEMP1, TEMP2);   // calculate the sum
+        generate( PUSHD_OP, TEMP1,   0);   // move the result onto the stack
       }
   |   arithmetic_factor
   ;
@@ -337,7 +336,7 @@ arithmetic_factor: quantity
                      // pop the address
                      // dereference the address
                      // push the value in the address
-                     //generate( 27, TEMP1, 0,     "popd" );
+                     //generate( POPD_OP, TEMP1, 0,     "popd" );
                      //generate(  3, TEMP2, TEMP1, "mif"  );
                      //generate( 24, TEMP2, 0,     "pushd" );
                    
@@ -484,24 +483,31 @@ int handle_array_reference(char* variable, int index)
     }
 }
 
-void handle_line() {
-  generate(31, 0, 0, "tline");
-}
-
-void handle_write(int location) {
-  generate(29, location, 0, "puti");
-}
-
-void handle_writestr(int location) {
-}
-
 /* Reserves space for global variables and arrays. */ 
-int allocate(int space) 
+int allocate(int size) 
 {
-  // TODO: add check for when space runs out!
+  // We need to keep track of the beginning of the memory being
+  // allocated.  Then, we increase the index to 'consume' the
+  // space.
   int location = paxi_static_memory_index;
-  paxi_static_memory_index += space;
+  paxi_static_memory_index += size;
   return location;
+}
+
+/* Adds the opcode, arg1, and arg2 to the code store.  This is used to
+   build up the PVM instructions during parsing.
+*/
+void generate(int opcode, int arg1, int arg2) {
+  paxi_code[paxi_code_length++] = opcode;
+  paxi_code[paxi_code_length++] = arg1;
+  paxi_code[paxi_code_length++] = arg2;
+}
+
+/* Retrieves one integer from the code store array.
+   Used to emit the resulting PVM instructions to a file.
+*/
+int retrieve(int index) {
+  return paxi_code[index];
 }
 
 /* Returns the location the symbol references.  Performs a check
@@ -560,11 +566,6 @@ void duplicate_symbol_error(void)
 
 int get_used() {
   return paxi_code_length++;
-}
-
-void generate(int a, int b, int c, char* description) {
-  store(a,b,c);  
-  //printf("%d\t%d\t%d\t%s\n",a,b,c,description);
 }
 
 int main() {
