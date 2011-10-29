@@ -48,13 +48,13 @@ struct symbol* reference(char*, int);
 
 // Addresses for temporary memory.  Used by opcodes to derefence memory
 // and perform arithmetic.
-static int TEMP0 = 500, TEMP1 = 501, TEMP2 = 502, TEMP3 = 503, TEMP4 = 504,
-           TEMP5 = 505, TEMP6 = 506, TEMP7 = 507, TEMP8 = 508, TEMP9 = 509;
+const static int TEMP0 = 500, TEMP1 = 501, TEMP2 = 502, TEMP3 = 503, TEMP4 = 504,
+                 TEMP5 = 505, TEMP6 = 506, TEMP7 = 507, TEMP8 = 508, TEMP9 = 509;
 
 /* Symbol table and code store */
 void  generate(int, int, int);
 int   retrieve(int);
-int   paxi_code[4096];
+int   paxi_code[4096*10];
 static int paxi_code_length = 0;
 struct symbol** symtable;
 
@@ -70,7 +70,10 @@ enum types
   local_type     =  4,
   parameter_type =  8, 
   procedure_type = 16
-}; 
+};
+
+
+
  
 int yywrap() {
   return 1;
@@ -272,7 +275,7 @@ quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
 /* Set $$ to the location of the variable or array at index */
 /* Stack Policy: leaves an ADDRESS */
 variable: tID {
-            $<val>$ = (reference($<str>1, variable_type)->location);
+            $<val>$ = (reference($<str>1, variable_type)->location, variable_type | local_type | parameter_type);
             generate( PUSHI_OP, $<val>$, 0);
           }
   |       tID '[' arithmetic_expression ']' {
@@ -300,7 +303,8 @@ write_statement: tWRITE '(' arithmetic_expression ')' {
                  }
   |              tWRITESTR '(' tSTRING ')' { }
   |              tWRITESTR '(' tID ')' {
-                   $<val>$ = (reference($<str>1, variable_type)->location);
+                   // FIX
+                   $<val>$ = (reference($<str>3, variable_type)->location);
                    generate(PUTS_OP, $<val>$, 0);
                  }
   ;
@@ -311,10 +315,10 @@ line_statement: tLINE { generate(LINE_OP, 0, 0); }
 /* Stack Policy: leaves a VALUE */
 arithmetic_expression:
       arithmetic_expression add_operator arithmetic_term {
-        generate( POPD_OP,  TEMP1,   0);   // move term into addr (order?)
-        generate( POPD_OP,  TEMP2,   0);   // move expr into addr (order?)
-        generate( ADD_OP,   TEMP1, TEMP2);   // calculate the sum
-        generate( PUSHD_OP, TEMP1,   0);   // move the result onto the stack
+        generate( POPD_OP,  TEMP2,   0);     // move term into addr (order?)
+        generate( POPD_OP,  TEMP1,   0);     // move expr into addr (order?)
+        generate( $<val>2,  TEMP1, TEMP2);   // calculate the sum
+        generate( PUSHD_OP, TEMP1,   0);     // move the result onto the stack
         $<val>$ = TEMP1;
       }
   |   arithmetic_term
@@ -323,33 +327,27 @@ arithmetic_expression:
 /* Stack Policy: leaves a VALUE */
 arithmetic_term:
       arithmetic_term mult_operator arithmetic_factor {
-        generate( POPD_OP, TEMP1,   0);   // move term into addr (order?)
-        generate( POPD_OP, TEMP2,   0);   // move expr into addr (order?)
-        generate( MUL_OP, TEMP1, TEMP2);   // calculate the sum
-        generate( PUSHD_OP, TEMP1,   0);   // move the result onto the stack
+        generate( POPD_OP,  TEMP2,   0);     // move term into addr (order?)
+        generate( POPD_OP,  TEMP1,   0);     // move expr into addr (order?)
+        generate( $<val>2,  TEMP1, TEMP2);   // calculate the sum
+        generate( PUSHD_OP, TEMP1,   0);     // move the result onto the stack
+        $<val>$ = TEMP1;
       }
   |   arithmetic_factor
   ;
 
-/* ??? Stack Policy: leaves a VALUE ??? */
-arithmetic_factor: quantity
-                     // pop the address
-                     // dereference the address
-                     // push the value in the address
-                     //generate( POPD_OP, TEMP1, 0,     "popd" );
-                     //generate(  3, TEMP2, TEMP1, "mif"  );
-                     //generate( 24, TEMP2, 0,     "pushd" );
-                   
+/* Stack Policy: do nothing */
+arithmetic_factor: quantity                   
   |   '(' arithmetic_expression ')' {
          $<val>$ = $<val>2;
        }
 
-add_operator: '+' { $<str>$ = "+"; }
-  |           '-' { $<str>$ = "-"; }
+add_operator: '+' { $<val>$ = ADD_OP; }
+  |           '-' { $<val>$ = SUB_OP; }
   ;
 
-mult_operator: '*' { $<str>$ = "*"; }
-  |            '/' { $<str>$ = "/"; }
+mult_operator: '*' { $<val>$ = MUL_OP; }
+  |            '/' { $<val>$ = DIV_OP; }
   ;
 
 boolean_expression: boolean_expression tOR boolean_term
@@ -388,7 +386,7 @@ void handle_global(void)
     {     
       char *name = (char*)malloc(strlen(yylval.str));
       name = strcpy(name, yylval.str);
-      int type = parameter_type;
+      int type = variable_type;
       int size = 1;
       int location = allocate(size);
       int result = insert(symtable, name, type, size, location);
@@ -528,13 +526,15 @@ struct symbol* reference(char *name, int type)
   // if still nothing was found, return NULL to indicate nothing found.
   if (sym == NULL)
     {
+      printf("Symbol not found.");
       return NULL;
     }
   // if something was found, but it wasn't the specified type, bail out.
-  // else if (sym && (sym->type != type))
-  //  {
-  //    return NULL;
-  //  } 
+  else if ((sym->type & type) == 0)
+    {
+      printf("Symbol %s was wrong type. Want %d, Got %d, %d\n", name, type, sym->type, (sym->type & type));
+      return sym;
+    }
   // otherwise provide the location to the caller.
   else
     {
@@ -564,19 +564,22 @@ void duplicate_symbol_error(void)
   printf("%-20s  **Identifer already in use**\n", yylval.str);
 }
 
-int get_used() {
+int get_used(void) {
   return paxi_code_length++;
 }
 
-int main() {
-  // printf(INFO_TOP, "Sym. Table Name", "Size", "Location", "Type");
-  symtable = setupSymbolTable();
-  yydebug = 0;
-  yyparse();
+void emit(void) {
   int i;
   for (i = 0; i < paxi_code_length; i++) {
     printf("%d\t", retrieve(i));
     if ((i-2) % 3 == 0) { printf("\n"); }
   }
+}
+
+int main() {
+  symtable = setupSymbolTable();
+  yydebug = 0;
+  yyparse();
+  emit();
   return 0;
 }
