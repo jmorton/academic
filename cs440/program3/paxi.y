@@ -9,6 +9,8 @@
 
 #define INFO_TOP    "%-20s\t%4s \t %4s \t %4s\n"
 #define INFO_FORMAT "%-20s\t%4d \t %4d \t %4d\n"
+int TEMP1= 508;
+int TEMP2= 509;
 
 // This is defined in paxi.l but used when an error occurs
 // to provide some more information about where stuff went
@@ -203,9 +205,12 @@ statement: assignment
   |   return_value
   ;
 
+/* variable: leave nothing. */
 assignment: variable '=' arithmetic_expression {
               $<val>$ = $<val>1;
-              generate(2, $<val>1, $<val>3, "mvi");
+              generate(27, TEMP1,     0, "popd"); // the value
+              generate(27, TEMP2,     0, "popd"); // the variable address indirect
+              generate(4,  TEMP2, TEMP1, "mit" );
             }
   ;
 
@@ -244,18 +249,21 @@ parameter_list: parameter_list tCOMMA arithmetic_expression
   |   arithmetic_expression
   ;
 
-/* Stack Policy: leaves a VALUE */
-quantity: variable {
-            generate( 27, 500,   0 , "popd"  ); // pop address 
-            generate(  1, 500, 501 , "mov"   ); // get value at address
-            generate( 24, 501,   0 , "pushd" ); // push value onto stack
+
+quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
+            $<val>$ = $<val>1;
+            generate( 27, TEMP1, 0,     "popd"); // turn into value
+            generate(  3, TEMP2, TEMP1, "mif" ); // dereference
+            generate( 24, TEMP2, 0,     "pushd");
           }
   |       tINT { /* push value in $1 */
+            $<val>$ = $<val>1;
             generate( 26, $<val>1, 0, "pushi" );
           }
   |       call { /* nothing yet */ 
           }
   |       tCHAR {
+            $<val>$ = $<val>1;
             generate( 26, $<val>1, 0, "pushi" );
           }
   ;
@@ -264,28 +272,38 @@ quantity: variable {
 /* Set $$ to the location of the variable or array at index */
 /* Stack Policy: leaves an ADDRESS */
 variable: tID {
-            $<val>$=(reference($<str>1, variable_type)->location);
+            $<val>$ = (reference($<str>1, variable_type)->location);
             generate( 26, $<val>$, 0, "pushi" );
           }
-          // Use the ADDRESS left on the stack by arithmetic_expression.
-          // Move arithmetic_expression to temp
-          // Move tID address to temp
   |       tID '[' arithmetic_expression ']' {
-            $<val>$=((reference($<str>1, array_type)->location)+$<val>3);
-            generate( 27, 500,   0, "popd" );   // move arithmetic_expr into temp
-            generate( 27, 501,   0, "popd" );   // move tID address to temp
-            generate(  9, 500, 501, "add"  );   // calculate the new address
-            generate( 24, 500,   0, "pushd" );   // leave calculated addr on stack
+            $<val>$ = (reference($<str>1, array_type)->location);
+            generate( 26, $<val>$,   0, "pushi" );     // move array address onto stack
+            generate( 27, TEMP1,     0, "popd"  );     // move tID address to temp
+            generate( 27, TEMP2,     0, "popd"  );     // move arithmetic_expr into temp
+            generate(  9, TEMP1, TEMP2, "add"   );     // calculate the offset
+            generate( 24, TEMP1,     0, "pushd" );     // leave calculated addr on stack
           }
   ;
 
-read_statement: tREAD '(' variable ')' { generate(33, reference($<str>1, array_type)->location, 0, "tgets"); }
+/* Leave nothing */
+read_statement: tREAD '(' variable ')' {
+                  //generate(33, reference($<str>3, array_type)->location, 0, "tgets");
+                  generate(33, $<val>3, 0, "tgets");
+                }
   |   tREADSTR '(' tID ')'
   ;
 
-write_statement: tWRITE '(' arithmetic_expression ')' { handle_write($<val>3); }
+/* Leave nothing */
+write_statement: tWRITE '(' arithmetic_expression ')' {
+                   generate(27, TEMP2, 0,      "popd");
+                   generate( 1, TEMP1, TEMP2,  "mov");
+                   generate(29, TEMP1, 0,      "puti");
+                 }
   |              tWRITESTR '(' tSTRING ')' { }
-  |              tWRITESTR '(' tID ')' { handle_writestr(reference($<str>3, array_type)->location); }
+  |              tWRITESTR '(' tID ')' {
+                   // generate(30, location, 0, "puts");
+                   // handle_writestr(reference($<str>3, array_type)->location);
+                 }
   ;
 
 line_statement: tLINE { handle_line(); }
@@ -294,10 +312,11 @@ line_statement: tLINE { handle_line(); }
 /* Stack Policy: leaves a VALUE */
 arithmetic_expression:
       arithmetic_expression add_operator arithmetic_term {
-        generate( 27, 500,   0, "popd" );   // move term into addr (order?)
-        generate( 27, 501,   0, "popd" );   // move expr into addr (order?)
-        generate(  9, 500, 501, "add"  );   // calculate the sum
-        generate( 24, 500,   0, "pushd" );   // move the result onto the stack
+        generate( 27, TEMP1,   0, "popd" );   // move term into addr (order?)
+        generate( 27, TEMP2,   0, "popd" );   // move expr into addr (order?)
+        generate(  9, TEMP1, TEMP2, "add"  );   // calculate the sum
+        generate( 24, TEMP1,   0, "pushd" );   // move the result onto the stack
+        $<val>$ = TEMP1;
       }
   |   arithmetic_term
   ;
@@ -305,20 +324,26 @@ arithmetic_expression:
 /* Stack Policy: leaves a VALUE */
 arithmetic_term:
       arithmetic_term mult_operator arithmetic_factor {
-        generate( 27, 500,   0, "popd" );   // move term into addr (order?)
-        generate( 27, 501,   0, "popd" );   // move expr into addr (order?)
-        generate( 12, 500, 501, "mul"  );   // calculate the sum
-        generate( 24, 500,   0, "pushd" );   // move the result onto the stack
+        generate( 27, TEMP1,   0, "popd" );   // move term into addr (order?)
+        generate( 27, TEMP2,   0, "popd" );   // move expr into addr (order?)
+        generate( 12, TEMP1, TEMP2, "mul"  );   // calculate the sum
+        generate( 24, TEMP1,   0, "pushd" );   // move the result onto the stack
       }
   |   arithmetic_factor
   ;
 
 /* ??? Stack Policy: leaves a VALUE ??? */
-arithmetic_factor: quantity { }
+arithmetic_factor: quantity
+                     // pop the address
+                     // dereference the address
+                     // push the value in the address
+                     //generate( 27, TEMP1, 0,     "popd" );
+                     //generate(  3, TEMP2, TEMP1, "mif"  );
+                     //generate( 24, TEMP2, 0,     "pushd" );
+                   
   |   '(' arithmetic_expression ')' {
          $<val>$ = $<val>2;
        }
-  ;
 
 add_operator: '+' { $<str>$ = "+"; }
   |           '-' { $<str>$ = "-"; }
@@ -464,11 +489,10 @@ void handle_line() {
 }
 
 void handle_write(int location) {
-  generate(29, location, 0, "tputi");
+  generate(29, location, 0, "puti");
 }
 
 void handle_writestr(int location) {
-  generate(30, location, 0, "tputs");
 }
 
 /* Reserves space for global variables and arrays. */ 
@@ -540,7 +564,7 @@ int get_used() {
 
 void generate(int a, int b, int c, char* description) {
   store(a,b,c);  
-  // printf("%d\t%d\t%d\t%s\n",a,b,c,description);
+  //printf("%d\t%d\t%d\t%s\n",a,b,c,description);
 }
 
 int main() {
