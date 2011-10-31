@@ -2,16 +2,28 @@
    CS440
    Program 3
 
-   The major pieces of this parser (aside from the usual grammar, etc...) is a:
-   - symbol table
-   - code store
+   The major pieces of this parser (aside from the usual grammar, etc...):
+   - Symbol table: contains the names and locations of arrays variables
+     and procedures.
+   - Code store: contains instruction triples (opcode and two arguments).
     
-   The parser has fundamental operations:
-   - allocate:
-   - store
-   - generate: add opcodes to the code store
-   - reference
-   - mangle
+   The parser relies on stack conventions to perform runtime calculation of array
+   addresses and arithmetic.  This convention is documented along with the part
+   of the grammar where they are implemented.  It is important to consider these conventions when modifying this parser.
+
+   Fundamental constants and widely used functions of interest are outlined
+   here:
+
+   - allocate: used to allocate memory statically.  used by variable, array,
+     and procedure related clauses of the grammar.
+
+   - generate: add opcodes to the code store.
+
+   - reference: retrieve a symbol table entry of the specified type(s).  It
+     is up to the caller to get what they'd like, typically the location.
+
+   - mangle: used to generate scoped symbol names so that local variables
+     can shadow global ones.
 
  */
 %{
@@ -25,38 +37,43 @@
 // down hill.
 extern int global_line_count;
 
-// Used to keep track of the number of parameters for each
-// procedure.  Reset at the beginning of a procedure and
-// incremented as each parameter is parsed.
+/* Values shared by the paxi parser to generate code. Names explain
+   purpose.  These should only be modified by one funcion although
+   reading them anywhere is considered safe.  4096 is enough for now
+   but will be changed later to a dynamic collection.
+*/
+int paxi_code_length = 0; // tracks code store length, should be a 
+int paxi_code[4096*3];    // multiple of three since each opcode is
+                          // exactly three int
+
+struct symbol** symtable;
+
+char *paxi_current_scope;
 int paxi_procedure_arity = 0;
 int paxi_procedure_variable_count = 0;
 int paxi_static_memory_index = 510;
 int paxi_last_addr = 0;
-char *paxi_current_scope;
 
-// Declarations for paxi related functions that take actions
-// based on parsing.
+/* Functions help us write a more expressive grammar.  It is
+   possible to inline some of these when performance becomes
+   a point of interest.
+ */
 char* mangle_var_name();
 int   allocate(int);
 void  handle_global(void);
 void  handle_array(char*, int);
-void  handle_procedure(void);
 void  handle_parameter(void);
 void  handle_local_variable(void);
 void  duplicate_symbol_error(void);
-struct symbol* reference(char*, int);
-
-// Addresses for temporary memory.  Used by opcodes to derefence memory
-// and perform arithmetic.
-const static int TEMP0 = 500, TEMP1 = 501, TEMP2 = 502, TEMP3 = 503, TEMP4 = 504,
-                 TEMP5 = 505, TEMP6 = 506, TEMP7 = 507, TEMP8 = 508, TEMP9 = 509;
-
-/* Symbol table and code store */
 void  generate(int, int, int);
 int   retrieve(int);
-int   paxi_code[4096*10];
-static int paxi_code_length = 0;
-struct symbol** symtable;
+struct symbol* reference(char*, int);
+
+/* Addresses for temporary memory.  Used by opcodes to derefence memory
+   and perform arithmetic.  These should never be modified during runtime
+   so are declared const */
+const static int TEMP0 = 500, TEMP1 = 501, TEMP2 = 502, TEMP3 = 503, TEMP4 = 504,
+                 TEMP5 = 505, TEMP6 = 506, TEMP7 = 507, TEMP8 = 508, TEMP9 = 509;
 
 /* These make type information smaller to store and faster to check
    (rather than using a string). By using powers of two, we can use
@@ -72,9 +89,6 @@ enum types
   procedure_type = 16
 };
 
-
-
- 
 int yywrap() {
   return 1;
 }
@@ -168,13 +182,22 @@ procedure_list: /* nothing */
 /* proc main() ... endproc */
 procedure_decl: tPROC tID
     {
-        paxi_current_scope = (char*)malloc(sizeof(char)*yylen);
-        paxi_current_scope = strcpy(paxi_current_scope, $<str>2);
-        paxi_procedure_arity = 0;
-        paxi_procedure_variable_count = 0;
+      paxi_current_scope = (char*)malloc(sizeof(char)*yylen);
+      paxi_current_scope = strcpy(paxi_current_scope, $<str>2);
+      paxi_procedure_arity = 0;
+      paxi_procedure_variable_count = 0;
     }
   '(' formal_parameters ')' locals_list statement_list tENDPROC
-    { handle_procedure(); }
+    {
+      if (!lookup(symtable, yylval.str))
+        {
+          int result = insert(symtable, paxi_current_scope, procedure_type, paxi_procedure_arity, 0);
+        }
+      else
+        {
+          duplicate_symbol_error();
+        }
+    }
   ;
 
 formal_parameters: /* nothing */
@@ -208,12 +231,12 @@ statement: assignment
   |   return_value
   ;
 
-/* variable: leave nothing. */
+/* Stack Policy: Leave nothing. */
 assignment: variable '=' arithmetic_expression {
               $<val>$ = $<val>1;
-              generate(POPD_OP, TEMP1,     0); // the value
-              generate(POPD_OP, TEMP2,     0); // the variable address indirect
-              generate(MIT_OP,  TEMP2, TEMP1);
+              generate(POPD_OP, TEMP1,     0); // arithmetic expression value
+              generate(POPD_OP, TEMP2,     0); // variable address
+              generate(MIT_OP,  TEMP2, TEMP1); // move value into address
             }
   ;
 
@@ -252,12 +275,11 @@ parameter_list: parameter_list tCOMMA arithmetic_expression
   |   arithmetic_expression
   ;
 
-
-quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
+quantity: variable { /* replace address with value */
             $<val>$ = $<val>1;
-            generate( POPD_OP, TEMP1, 0); // turn into value
-            generate( MIF_OP, TEMP2, TEMP1); // dereference
-            generate( PUSHD_OP, TEMP2, 0);
+            generate( POPD_OP,  TEMP1,     0); // get the address
+            generate( MIF_OP,   TEMP2, TEMP1); // dereference
+            generate( PUSHD_OP, TEMP2,     0); // store the value
           }
   |       tINT { /* push value in $1 */
             $<val>$ = $<val>1;
@@ -275,35 +297,32 @@ quantity: variable { /* LEAVE AN ADDRESS?  How about the value? */
 /* Set $$ to the location of the variable or array at index */
 /* Stack Policy: leaves an ADDRESS */
 variable: tID {
-            $<val>$ = (reference($<str>1, variable_type)->location, variable_type | local_type | parameter_type);
+            $<val>$ = (reference($<str>1, variable_type | local_type | parameter_type)->location);
             generate( PUSHI_OP, $<val>$, 0);
           }
   |       tID '[' arithmetic_expression ']' {
             $<val>$ = (reference($<str>1, array_type)->location);
-            generate( PUSHI_OP, $<val>$,   0);     // move array address onto stack
-            generate( POPD_OP, TEMP1,     0);     // move tID address to temp
-            generate( POPD_OP, TEMP2,     0);     // move arithmetic_expr into temp
-            generate( ADD_OP, TEMP1, TEMP2);     // calculate the offset
-            generate( PUSHD_OP, TEMP1,     0);     // leave calculated addr on stack
+            generate( PUSHI_OP, $<val>$,    0);     // move array address onto stack
+            generate( POPD_OP,  TEMP1,      0);     // move tID address to temp
+            generate( POPD_OP,  TEMP2,      0);     // move arithmetic_expr into temp
+            generate( ADD_OP,   TEMP1,  TEMP2);     // calculate the offset
+            generate( PUSHD_OP, TEMP1,      0);     // leave calculated addr on stack
           }
   ;
 
 /* Leave nothing */
-read_statement: tREAD '(' variable ')' {
-                  generate(GETS_OP, $<val>3, 0);
-                }
+read_statement: tREAD '(' variable ')' { generate(GETS_OP, $<val>3, 0); }
   |   tREADSTR '(' tID ')'
   ;
 
 /* Leave nothing */
 write_statement: tWRITE '(' arithmetic_expression ')' {
-                   generate(POPD_OP, TEMP2, 0);
+                   generate(POPD_OP, TEMP2,     0);
                    generate( MOV_OP, TEMP1, TEMP2);
-                   generate(PUTI_OP, TEMP1, 0);
+                   generate(PUTI_OP, TEMP1,     0);
                  }
   |              tWRITESTR '(' tSTRING ')' { }
   |              tWRITESTR '(' tID ')' {
-                   // FIX
                    $<val>$ = (reference($<str>3, variable_type)->location);
                    generate(PUTS_OP, $<val>$, 0);
                  }
@@ -315,10 +334,10 @@ line_statement: tLINE { generate(LINE_OP, 0, 0); }
 /* Stack Policy: leaves a VALUE */
 arithmetic_expression:
       arithmetic_expression add_operator arithmetic_term {
-        generate( POPD_OP,  TEMP2,   0);     // move term into addr (order?)
-        generate( POPD_OP,  TEMP1,   0);     // move expr into addr (order?)
-        generate( $<val>2,  TEMP1, TEMP2);   // calculate the sum
-        generate( PUSHD_OP, TEMP1,   0);     // move the result onto the stack
+        generate( POPD_OP,  TEMP2,     0);     // move term into addr (order?)
+        generate( POPD_OP,  TEMP1,     0);     // move expr into addr (order?)
+        generate( $<val>2,  TEMP1, TEMP2);     // calculate the sum
+        generate( PUSHD_OP, TEMP1,     0);     // move the result onto the stack
         $<val>$ = TEMP1;
       }
   |   arithmetic_term
@@ -327,10 +346,10 @@ arithmetic_expression:
 /* Stack Policy: leaves a VALUE */
 arithmetic_term:
       arithmetic_term mult_operator arithmetic_factor {
-        generate( POPD_OP,  TEMP2,   0);     // move term into addr (order?)
-        generate( POPD_OP,  TEMP1,   0);     // move expr into addr (order?)
+        generate( POPD_OP,  TEMP2,     0);     // move term into addr (order?)
+        generate( POPD_OP,  TEMP1,     0);     // move expr into addr (order?)
         generate( $<val>2,  TEMP1, TEMP2);   // calculate the sum
-        generate( PUSHD_OP, TEMP1,   0);     // move the result onto the stack
+        generate( PUSHD_OP, TEMP1,     0);     // move the result onto the stack
         $<val>$ = TEMP1;
       }
   |   arithmetic_factor
@@ -342,10 +361,12 @@ arithmetic_factor: quantity
          $<val>$ = $<val>2;
        }
 
+/* Returning the op saves logical checks */
 add_operator: '+' { $<val>$ = ADD_OP; }
   |           '-' { $<val>$ = SUB_OP; }
   ;
 
+/* Returning the op saves logical checks */
 mult_operator: '*' { $<val>$ = MUL_OP; }
   |            '/' { $<val>$ = DIV_OP; }
   ;
@@ -390,28 +411,11 @@ void handle_global(void)
       int size = 1;
       int location = allocate(size);
       int result = insert(symtable, name, type, size, location);
-      // printf(INFO_FORMAT, name, size, location, type);
     }
   else
     {
       duplicate_symbol_error();
     }   
-}
-
-void handle_procedure(void)
-{
-  if (! lookup(symtable, yylval.str))
-    {     
-      int type = procedure_type;
-      int size = paxi_procedure_arity;
-      int location = 0; // what is the location??
-      int result = insert(symtable, paxi_current_scope, type, size, location);
-      // printf(INFO_FORMAT, paxi_current_scope, size, location, type);
-    }
-  else
-    {
-      duplicate_symbol_error();
-    }
 }
 
 void handle_array(char *str, int size)
@@ -423,7 +427,6 @@ void handle_array(char *str, int size)
       int type = array_type;
       int location = allocate(size);
       int result = insert(symtable, name, type, size, location);
-      // printf(INFO_FORMAT, name, size, location, type);
     }
   else
     {
@@ -441,7 +444,6 @@ void handle_parameter(void)
       int size = 1;
       int location = paxi_procedure_arity;
       int result = insert(symtable, name, type, size, location);
-      // printf(INFO_FORMAT, name, size, location, type);
     }
   else
     {
@@ -459,25 +461,10 @@ void handle_local_variable(void)
       int size = 1;
       int location = paxi_procedure_variable_count;
       int result = insert(symtable, name, type, size, location);
-      // printf(INFO_FORMAT, name, size, location, type);
     }
   else
     {
       duplicate_symbol_error();
-    }
-}
-
-int handle_array_reference(char* variable, int index)
-{
-  struct symbol *s = reference(variable, array_type);
-  if (s)
-    {
-      printf("array %s found, %d\n", variable, index);
-      return index;
-    }
-  else
-    {
-      printf("\n%s missing\n",variable);
     }
 }
 
@@ -508,8 +495,12 @@ int retrieve(int index) {
   return paxi_code[index];
 }
 
-/* Returns the location the symbol references.  Performs a check
-   to make sure the symbol referenced is semantically correct.
+/* Returns the symbol table entry corresponding to the name.  It is
+   possible to specify the type using a bitwise operation if a range
+   of symbol table entries is allowed.
+   
+   For example:
+   reference("whatever", variable_type | local_type);
 */
 struct symbol* reference(char *name, int type)
 {
@@ -530,6 +521,8 @@ struct symbol* reference(char *name, int type)
       return NULL;
     }
   // if something was found, but it wasn't the specified type, bail out.
+  // by using a bitwise operation, we can specify multiple acceptable types
+  // instead of repeatedly invoking reference with different types.
   else if ((sym->type & type) == 0)
     {
       printf("Symbol %s was wrong type. Want %d, Got %d, %d\n", name, type, sym->type, (sym->type & type));
@@ -559,15 +552,13 @@ char* mangle_var_name(void)
   return name;
 }
 
+/* Reported when a syntax error exists. */
 void duplicate_symbol_error(void)
 {
   printf("%-20s  **Identifer already in use**\n", yylval.str);
 }
 
-int get_used(void) {
-  return paxi_code_length++;
-}
-
+/* Writes the generated code store to stdout. */
 void emit(void) {
   int i;
   for (i = 0; i < paxi_code_length; i++) {
