@@ -17,13 +17,14 @@ require './instructions'
 
 class Emulator
   
-  attr_accessor :code, :data, :register, :last_instruction, :instruction_pointer, :errors
+  attr_accessor :code, :data, :register, :last_instruction, :instruction_pointer, :errors, :opcode
   
   STACK_START = 500
 
   def initialize(instructions)
     @code = []
     @data = []
+    @opcode = 1
     @register = []
     @instruction_pointer = 0
     self.stack_pointer = STACK_START
@@ -59,10 +60,11 @@ class Emulator
   # @return nil
   # 
   def execute!(triple)
+    @opcode += 1
     begin
       Instruction[ triple.first ].execute( self, triple[1], triple[2] )
     rescue Exception => e
-      @errors << [ e, triple ]
+      @errors << [ @opcode, e, triple ]
     end
   end
 
@@ -120,5 +122,8 @@ else
   @program_text = open(ARGV.shift).read
   @emu = Emulator.new(@program_text)
   @emu.run!
-  p @emu.errors
+  
+  if @emu.errors.length > 1
+    p @emu.errors
+  end
 end

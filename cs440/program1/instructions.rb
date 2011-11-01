@@ -103,11 +103,11 @@ Instruction.new( 11, 'sub' ) do |m, d, e|
 end
 
 Instruction.new( 12, 'mul' ) do |m, d, e|
-  m.data[d] *= e # test
+  m.data[d] *= m.data[e] # test
 end
 
 Instruction.new( 13, 'div' ) do |m, d, e|
-  m.data[d] /= e # test
+  m.data[d] /= m.data[e] # test
 end
 
 Instruction.new( 14, 'or' ) do |m, d, e|
