@@ -36,6 +36,7 @@
 // to provide some more information about where stuff went
 // down hill.
 extern int global_line_count;
+extern char linebuf[500];
 
 /* Values shared by the paxi parser to generate code. Names explain
    purpose.  These should only be modified by one funcion although
@@ -93,11 +94,11 @@ int yywrap() {
   return 1;
 }
 
-void yyerror(const char * str) {
-  printf("Error: %s\n", str);
-  printf("Died on line: %d\n", global_line_count);
-}
 
+void yyerror(char *s)
+  {
+    fprintf(stderr, "line %d: %s:\n%s\n", global_line_count, s, linebuf);
+  }
 %}
 
 %union {
@@ -525,7 +526,7 @@ struct symbol* reference(char *name, int type)
   // instead of repeatedly invoking reference with different types.
   else if ((sym->type & type) == 0)
     {
-      printf("Symbol %s was wrong type. Want %d, Got %d, %d\n", name, type, sym->type, (sym->type & type));
+      fprintf(stderr,"Symbol %s was wrong type. Want %d, Got %d, %d\n", name, type, sym->type, (sym->type & type));
       return sym;
     }
   // otherwise provide the location to the caller.

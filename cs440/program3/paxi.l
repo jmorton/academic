@@ -2,6 +2,7 @@
   #include <stdlib.h>
   #include "paxi.tab.h"  
   int global_line_count = 1;
+  char linebuf[500];
 %}
 
 ws           [ \t]+
@@ -58,7 +59,10 @@ write        return(tWRITE);
 {identifier} { identifier();              return(tID);      }
 {integer}    { integer();                 return(tINT);     }
 {string}     { string();                  return(tSTRING);  }
-{newline}    { increment_newline();       }
+\n.*         { increment_newline();
+               strncpy(linebuf, yytext+1, sizeof(linebuf));
+               yyless(1);
+             }
 .            { printf("Fatal Lexing Error on %d", global_line_count); return 0;      }
 
 %%
