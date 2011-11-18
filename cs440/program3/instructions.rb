@@ -59,28 +59,28 @@ class Instruction
   end
 
   def display(m, a1 = nil, a2 = nil)
-    printf("%2d:%5s\t%d\t%d\t%d\n", self.opcode, self.mnemonic, m.stack_pointer, a1, a2)
+    printf("%2d:%6s\t%d\t%d\t%d\n", self.opcode, self.mnemonic, m.stack_pointer, a1, a2)
   end  
   
 end
 
 Instruction.new( 1, 'mov' ) do |m, d, e|
-  printf("\n%2d:%5s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
+  printf("\n%2d:%6s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
   m.data[d] = m.data[e]
 end
 
 Instruction.new( 2, 'mvi' ) do |m, d, n|
-  printf("\n%2d:%5s\t(%03d)\t%4d\t=\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d], n) if Debug
+  printf("\n%2d:%6s\t(%03d)\t%4d\t=\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d], n) if Debug
   m.data[d] = n
 end
 
 Instruction.new( 3, 'mif' ) do |m, d, e|
-  printf("\n%2d:%5s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
+  printf("\n%2d:%6s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
   m.data[d] = m.data[m.data[e]]
 end
 
 Instruction.new( 4, 'mit' ) do |m, d, e|
-  printf("\n%2d:%5s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
+  printf("\n%2d:%6s\t(%03d)\t%4d\t=\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
   m.data[m.data[d]] = m.data[e]
 end
 
@@ -110,6 +110,7 @@ Instruction.new( 10, 'addri' ) do |m, r, n|
 end
 
 Instruction.new( 11, 'sub' ) do |m, d, e|
+  printf("\n%2d:%6s\t(%03d)\t%4d\t-\t%4d\t(%03d)\t", self.opcode, self.mnemonic, d, m.data[d], m.data[e], e) if Debug
   m.data[d] = m.data[d].to_i - m.data[e].to_i
 end
 
@@ -123,45 +124,48 @@ Instruction.new( 13, 'div' ) do |m, d, e|
 end
 
 Instruction.new( 14, 'or' ) do |m, d, e|
-  m.data[d] = m.data[d] || m.data[e] # test
+  m.data[d] = (m.data[d].to_i != 0) || (m.data[e].to_i != 0) ? 1 : 0
 end
 
 Instruction.new( 15, 'and' ) do |m, d, e|
-  m.data[d] = m.data[d] && m.data[e] # test
+  m.data[d] = (m.data[d].to_i != 0) && (m.data[e].to_i != 0) ? 1 : 0
 end
 
 Instruction.new( 16, 'not' ) do |m, d, _|
-  m.data[d] = ! m.data[d]
+  m.data[d] = (m.data[d].to_i == 0) ? 1 : 0
 end
 
 Instruction.new( 17, 'b' ) do |m, a, _|
+  printf("\n%2d:%6s\t\t\tto\t%4s\t\t", self.opcode, self.mnemonic, a) if Debug
   m.instruction_pointer = a # test
 end
 
 Instruction.new( 18, 'beq' ) do |m, a, d|
-  m.instruction_pointer = a if m.data[d] == 0 # test (to_i?)
+  printf("\n%2d:%6s\t(%03d)\t%4d\tto\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d], a)  if Debug
+  m.instruction_pointer = a.to_i if m.data[d].to_i == 0 # test (to_i?)
 end
 
 Instruction.new( 19, 'bne' ) do |m, a, d|
-  m.instruction_pointer = a if m.data[d] != 0 # test (to_i?)
+  m.instruction_pointer = a if m.data[d].to_i != 0 # test (to_i?)
 end
 
 Instruction.new( 20, 'bgt' ) do |m, a, d|
-  m.instruction_pointer = a if m.data[d] > 0 # test (to_i?)
+  m.instruction_pointer = a if m.data[d].to_i > 0 # test (to_i?)
 end
 
 Instruction.new( 21, 'bge' ) do |m,a,d|
-  if m.data[d] >= 0
+  if m.data[d].to_i >= 0
     m.instruction_pointer = a
   end
 end
 
 Instruction.new( 22, 'blt' ) do |m, a, d|
-  m.instruction_pointer = a if m.data[d] < 0 # test (to_i?)
+  printf("\n%2d:%6s\t(%03d)\t%4d\tto\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d], a)  if Debug
+  m.instruction_pointer = a if m.data[d].to_i < 0 # test (to_i?)
 end
 
 Instruction.new( 23, 'ble' ) do |m, a, d|
-  m.instruction_pointer = a if m.data[d] <= 0 # test (to_i?)
+  m.instruction_pointer = a if m.data[d].to_i <= 0 # test (to_i?)
 end
 
 Instruction.new( 24, 'pushd' ) do |m, d, x|
@@ -199,7 +203,7 @@ end
   
 Instruction.new 30, 'puts' do |m,d,x| # Up to a null character
   printf("\n%2d:%6s\t(%03d)\t%4d\t\t\n", self.opcode, self.mnemonic, d, m.data[d]) if Debug
-  while m.data[d] != nil or m.data[d] == 0
+  while (m.data[d] != 0) and (m.data[d] != nil)
     print m.data[d].chr
     d += 1
   end
@@ -210,12 +214,12 @@ Instruction.new 31, 'line' do |m,d,x|
 end
 
 Instruction.new 32, 'geti' do |m,d,x|
-  m.data[d] = gets.to_i
-  printf("\n%2d:%6s\t(%03d)\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d])
+  m.data[d] = gets
+  printf("\n%2d:%6s\t(%03d)\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d]) if Debug
 end
 
 Instruction.new 33, 'gets' do |m,d,x|
-  array_of_chars = gets.chomp.chars.to_a
+  array_of_chars = gets.chomp.chars.to_a.map {  |c| c.to_i }
   m.data[d..(d+array_of_chars.length)] = array_of_chars
   printf("\n%2d:%6s\t(%03d)\t%4s\t\t", self.opcode, self.mnemonic, d, m.data[d..(d+array_of_chars.length)].inspect.to_s) if Debug
 end
