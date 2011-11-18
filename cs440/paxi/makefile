@@ -11,29 +11,29 @@ paxi.tab.c :
 	bison -t -d paxi.y
 
 boolean.paxi : parser
-	./parser < boolean.pax > boolean.paxi
+	./parser <  examples/boolean.pax >  examples/boolean.paxi
 
 loop.paxi : parser
-	./parser < loop.pax > loop.paxi
+	./parser <  examples/loop.pax >  examples/loop.paxi
 
 string.paxi : parser
-	./parser < string.pax > string.paxi
+	./parser < examples/string.pax > examples/string.paxi
 
 sample3.paxi : parser
 	./parser < sample3.pax > sample3.paxi
 
 sample4.paxi : parser
-	./parser < sample4.pax > sample4.paxi
+	./parser < examples/sample4.pax > examples/sample4.paxi
 
 boolean : boolean.paxi
-	ruby machine.rb boolean.paxi
+	ruby machine.rb  examples/boolean.paxi
 
 loop : loop.paxi
-	ruby machine.rb loop.paxi
+	ruby machine.rb  examples/loop.paxi
 
 string : string.paxi
-	ruby machine.rb string.paxi
+	ruby machine.rb  examples/string.paxi
 
 sample4 : sample4.paxi
-	ruby machine.rb sample4.paxi
+	ruby machine.rb  examples/sample4.paxi
 
