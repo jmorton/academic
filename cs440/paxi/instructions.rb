@@ -214,7 +214,7 @@ Instruction.new 31, 'line' do |m,d,x|
 end
 
 Instruction.new 32, 'geti' do |m,d,x|
-  m.data[d] = gets
+  m.data[d] = gets.chomp
   printf("\n%2d:%6s\t(%03d)\t%4d\t\t", self.opcode, self.mnemonic, d, m.data[d]) if Debug
 end
 

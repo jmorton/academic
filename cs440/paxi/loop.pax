@@ -1,21 +1,18 @@
-var x, y, z;
+var x, y, y_original, z;
 
 proc main()
-  x = 0;
-  y = 0;
-  z = 5;
 
   writestr("x: ");
   read(x);
 
   writestr("y: ");
-  read(y);
+  read(y_original);
 
   writestr("z: ");
   read(z);
 
   while (x <= z)
-    y = 0;
+    y = y_original;
     while (y <= z)
       writestr("y: ");
       write(y);
