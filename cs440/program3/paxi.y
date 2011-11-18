@@ -1,6 +1,6 @@
 /* Jon Morton
    CS440
-   Program 3
+   Program 4
 
    The major pieces of this parser (aside from the usual grammar, etc...):
    - Symbol table: contains the names and locations of arrays variables
@@ -9,7 +9,8 @@
     
    The parser relies on stack conventions to perform runtime calculation of array
    addresses and arithmetic.  This convention is documented along with the part
-   of the grammar where they are implemented.  It is important to consider these conventions when modifying this parser.
+   of the grammar where they are implemented.  It is important to consider these
+   conventions when modifying this parser.
 
    Fundamental constants and widely used functions of interest are outlined
    here:
@@ -25,7 +26,8 @@
    - mangle: used to generate scoped symbol names so that local variables
      can shadow global ones.
 
- */
+*/
+
 %{
 #define YYDEBUG 1
 #include <stdio.h>
@@ -38,14 +40,28 @@
 extern int global_line_count;
 extern char linebuf[500];
 
+
 /* Values shared by the paxi parser to generate code. Names explain
    purpose.  These should only be modified by one funcion although
    reading them anywhere is considered safe.  4096 is enough for now
    but will be changed later to a dynamic collection.
 */
 int paxi_code_length = 0; // tracks code store length, should be a 
-int paxi_code[4096*3];    // multiple of three since each opcode is
+int paxi_code[40960*3];    // multiple of three since each opcode is
                           // exactly three int
+
+/* For now, the compiler can handle 4k of string literals.  Obviously, this
+   can be increased by using a dynamic array.  As string literals are parsed
+   paxi_str_length is incremented by the string's length plus one for the null
+   character.
+*/
+int paxi_str_offset = 0; // where the strings begin
+int paxi_str_length = 0; // the total size used by strings
+int paxi_str[8096];      // a buffer added to during compilation by literal()
+                         // and output by emit()
+
+/* Used by emit(), not set yet. */
+int paxi_entry_point = 0;
 
 struct symbol** symtable;
 
@@ -67,6 +83,8 @@ void  handle_parameter(void);
 void  handle_local_variable(void);
 void  duplicate_symbol_error(void);
 void  generate(int, int, int);
+void  backpatch(int, int, int, int);
+int   literal(char*);
 int   retrieve(int);
 struct symbol* reference(char*, int);
 
@@ -129,7 +147,9 @@ void yyerror(char *s)
 %token tWRITE     // write
 %token tGTE       // >=
 %token tLTE       // <=
-%token tTBD       // #
+%token tGT        // >=
+%token tLT        // <=
+%token tNE        // #
 %token tPO        // (
 %token tPC        // )
 %token tBO        // [
@@ -161,7 +181,7 @@ globals_decl: global_var_decl
   ;
 
 global_var_decl: tVAR global_var_list tSEMI
-    ;
+  ;
 
 global_var_list: global_var_list tCOMMA tID { handle_global(); }
   |   tID { handle_global(); }
@@ -241,7 +261,28 @@ assignment: variable '=' arithmetic_expression {
             }
   ;
 
-conditional: tIF boolean_expression statement_list else_clause tENDIF
+conditional: tIF boolean_expression {
+                   generate(POPD_OP, TEMP1, 0);
+                   // If expression is true, jump over statetement_list.
+                   // Once we know where this is, we'll update the jump
+                   // with that location.
+                   $<val>1 = paxi_code_length;
+                   generate( -1, -1, -1 );
+                 }
+                 statement_list {
+                   // Once the statement list length is known, the first
+                   // branch can be back patched.  However, we also need
+                   // to jump over the else block using backpatching.
+                   $<val>3 = paxi_code_length;
+                   generate( -1, -1, -1 );
+                   backpatch($<val>1, BEQ_OP, paxi_code_length, TEMP1);  // patch $1
+                   // 
+                 } else_clause {
+                   // patch $3, the if block should jump over the else
+                   // block statements.
+                   backpatch($<val>3, B_OP, paxi_code_length, 0);
+                 }
+                 tENDIF
   ;
 
 else_clause:  /* nothing */
@@ -251,10 +292,42 @@ else_clause:  /* nothing */
 loop: while_loop | do_loop
   ;
 
-while_loop: tWHILE boolean_expression statement_list tENDWHILE
+
+while_loop: tWHILE {
+              // In order to evaluate the boolean expression we need to
+              // jump back to it.
+              $<val>1 = paxi_code_length;
+            }
+            boolean_expression {
+              generate( POPD_OP, TEMP1, 0 );
+              // If the boolean expression results in not zero it is true
+              // so we must jump over the next instruction since it will
+              // eventually contain a branch for the false condition over
+              // the body of the while loop.
+              generate( BNE_OP, paxi_code_length+6, TEMP1 );
+              $<val>2 = paxi_code_length;
+              generate( -1, -1, -1 );
+            }
+            statement_list {
+              // Return to the beginning of the while loop
+              generate(B_OP, ($<val>1), TEMP1);
+              // Set branch operation when the statement is false
+              backpatch($<val>2, B_OP, paxi_code_length, 0);
+            }
+            tENDWHILE
   ;
 
-do_loop: tDO statement_list tENDO tWHILE boolean_expression
+do_loop: tDO {
+           // If the boolean expression evaluates to true, the instruction
+           // will jump back here.
+           $<val>1 = paxi_code_length;
+         } statement_list tENDO tWHILE boolean_expression {
+           generate( POPD_OP, TEMP1, 0 );
+           // If the stack top is zero, it's false so we shouldn't branch
+           // back to the beginning of the do block.  If it is true, one,
+           // then branch back to the beginning of the 
+           generate( BNE_OP, $<val>1, TEMP1 );
+         }
   ;
 
 io: read_statement 
@@ -312,7 +385,7 @@ variable: tID {
   ;
 
 /* Leave nothing */
-read_statement: tREAD '(' variable ')' { generate(GETS_OP, $<val>3, 0); }
+read_statement: tREAD '(' variable ')' { generate(GETI_OP, $<val>3, 0); }
   |   tREADSTR '(' tID ')'
   ;
 
@@ -322,7 +395,13 @@ write_statement: tWRITE '(' arithmetic_expression ')' {
                    generate( MOV_OP, TEMP1, TEMP2);
                    generate(PUTI_OP, TEMP1,     0);
                  }
-  |              tWRITESTR '(' tSTRING ')' { }
+  |              tWRITESTR '(' tSTRING ')' {
+                   // order matters, the string begins wherever the current
+                   // string length actually is now.  After adding the literal
+                   // the paxi_str_length would point to the end of the string.
+                   generate( PUTS_OP, paxi_static_memory_index + paxi_str_length, 0 );
+                   literal($<str>3);
+                 }
   |              tWRITESTR '(' tID ')' {
                    $<val>$ = (reference($<str>3, variable_type)->location);
                    generate(PUTS_OP, $<val>$, 0);
@@ -349,7 +428,7 @@ arithmetic_term:
       arithmetic_term mult_operator arithmetic_factor {
         generate( POPD_OP,  TEMP2,     0);     // move term into addr (order?)
         generate( POPD_OP,  TEMP1,     0);     // move expr into addr (order?)
-        generate( $<val>2,  TEMP1, TEMP2);   // calculate the sum
+        generate( $<val>2,  TEMP1, TEMP2);     // calculate the sum
         generate( PUSHD_OP, TEMP1,     0);     // move the result onto the stack
         $<val>$ = TEMP1;
       }
@@ -372,28 +451,63 @@ mult_operator: '*' { $<val>$ = MUL_OP; }
   |            '/' { $<val>$ = DIV_OP; }
   ;
 
-boolean_expression: boolean_expression tOR boolean_term
-  |                 boolean_term
+/* Stack Policy: Take two, leave one */
+boolean_expression: boolean_expression tOR boolean_term {
+                      generate( POPD_OP,  TEMP2,      0 );    // 0. prep RHS
+                      generate( POPD_OP,  TEMP1,      0 );    // 1. prep LHS
+                      generate(   OR_OP,  TEMP1,  TEMP2 );    // 2. perform OR
+                      generate(PUSHD_OP,  TEMP1,      0 );    // 3. push result
+                    }
+  |                 boolean_term {}
   ;
 
-boolean_term: boolean_term tAND boolean_factor
+/* Stack Policy: Take two, leave one */
+boolean_term: boolean_term tAND boolean_factor {
+                generate( POPD_OP,  TEMP2,      0 );    // 0. prep RHS
+                generate( POPD_OP,  TEMP1,      0 );    // 1. prep LHS
+                generate(  AND_OP,  TEMP1,  TEMP2 );    // 2. perform AND
+                generate(PUSHD_OP,  TEMP1,      0 );    // 3. push result
+              }
   |   boolean_factor
   ;
 
-boolean_factor: tNOT boolean_atom
+/* Stack Policy: Take one, leave one */
+boolean_factor: tNOT boolean_atom {
+                  generate( POPD_OP,  TEMP1,      0 );
+                  generate(  NOT_OP,  TEMP1,      0 );
+                  generate(PUSHD_OP,  TEMP1,      0 );
+                }
   |   boolean_atom
   ;
 
-boolean_atom: '(' arithmetic_expression relational_operator arithmetic_expression ')'
+/* Stack Policy: Take two and leave one (0 or 1) */
+/* TODO: Check correctness of jump addresses */
+boolean_atom: '(' arithmetic_expression relational_operator arithmetic_expression ')' {
+                /* Calculate locations in advance to keep generate statements
+                   clear of clutter. ( op size * location size )
+                 */
+                int addr1 = paxi_code_length + (3 * 6); // address of true ops
+                int addr2 = paxi_code_length + (3 * 7); // address after true ops
+
+                generate( POPD_OP,  TEMP2,      0 );    // 0. prep LHS?
+                generate( POPD_OP,  TEMP1,      0 );    // 1. prep RHS?
+                generate(  SUB_OP,  TEMP1,  TEMP2 );    // 2. compare
+                generate( $<val>3,  addr1,  TEMP1 );    // 3. jump over false ops
+                generate(PUSHI_OP,      0,      0 );    // 4. save false value
+                generate(    B_OP,  addr2,      0 );    // 5. jump over true ops
+                generate(PUSHI_OP,      1,      0 );    // 6. save true value
+                                                        // 7. some other operation
+              }
   |   '(' boolean_expression ')'
   ;
 
-relational_operator: '='
-  |   '<'
-  |   '>'
-  |   '#'
-  |   tGTE
-  |   tLTE
+relational_operator:
+      '='  { $<val>$ = BEQ_OP; }
+  |   tNE  { $<val>$ = BNE_OP; }
+  |   tLT  { $<val>$ = BLT_OP; }
+  |   tGT  { $<val>$ = BGT_OP; }
+  |   tGTE { $<val>$ = BGE_OP; }
+  |   tLTE { $<val>$ = BLE_OP; }
   ;
 
 %%
@@ -489,6 +603,26 @@ void generate(int opcode, int arg1, int arg2) {
   paxi_code[paxi_code_length++] = arg2;
 }
 
+void backpatch(int location, int opcode, int arg1, int arg2) {
+  paxi_code[location] = opcode;
+  paxi_code[location+1] = arg1;
+  paxi_code[location+2] = arg2;
+}
+
+/* Stores a copy of the string. */
+int literal(char *str) {
+  int i; // index of character for copied string
+  int len = paxi_str_length + strlen(str);
+
+  // Copy each character into the string literal array.
+  for ( i = 0; paxi_str_length <= len; paxi_str_length++)
+    {
+      paxi_str[paxi_str_length] = str[i++];
+    }
+
+  return 0;
+}
+
 /* Retrieves one integer from the code store array.
    Used to emit the resulting PVM instructions to a file.
 */
@@ -556,16 +690,24 @@ char* mangle_var_name(void)
 /* Reported when a syntax error exists. */
 void duplicate_symbol_error(void)
 {
-  printf("%-20s  **Identifer already in use**\n", yylval.str);
+  fprintf(stderr, "%-20s  **Identifer already in use**\n", yylval.str);
 }
 
-/* Writes the generated code store to stdout. */
-void emit(void) {
+/* Writes the header, code store, and string literals to stdout. */
+void emit(void)
+{
+  // Header
+  printf("%d %d %d %d ", paxi_code_length, paxi_static_memory_index, paxi_str_length, paxi_entry_point);
+  // Code store
   int i;
   for (i = 0; i < paxi_code_length; i++) {
-    printf("%d\t", retrieve(i));
-    if ((i-2) % 3 == 0) { printf("\n"); }
+    printf("%d ", retrieve(i));
+    // if ((i-2) % 3 == 0) { printf("\n"); }
   }
+  // String literals
+  for (i = 0; i < paxi_str_length; i++) {
+    printf("%d ", paxi_str[i]);
+  }  
 }
 
 int main() {

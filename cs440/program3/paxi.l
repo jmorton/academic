@@ -3,6 +3,8 @@
   #include "paxi.tab.h"  
   int global_line_count = 1;
   char linebuf[500];
+  char *strings[512];
+  int string_count = 0;
 %}
 
 ws           [ \t]+
@@ -17,9 +19,9 @@ string       \"[^"\\]*(\\.[^"\\]*)*\"
 
 {ws}         { /* ignore */ }
 {character}  { character();               return(tCHAR);    }
-and          return(tAND); 
-or           return(tOR); 
-not          return(tNOT); 
+"and"        return(tAND);
+"not"        return(tNOT);
+"or"         return(tOR); 
 var          return(tVAR); 
 array        return(tARRAY); 
 do           return(tDO); 
@@ -28,7 +30,7 @@ endo         return(tENDO);
 endif        return(tENDIF); 
 endproc      return(tENDPROC); 
 endwhile     return(tENDWHILE); 
-if           return(tIF); 
+"if"         return(tIF); 
 line         return(tLINE); 
 proc         return(tPROC); 
 read         return(tREAD); 
@@ -44,9 +46,9 @@ write        return(tWRITE);
 "="          return('=');
 "<="         return(tLTE); 
 ">="         return(tGTE); 
-"<"          return('<'); 
-">"          return('>'); 
-"#"          return('#'); 
+"<"          return(tLT); 
+">"          return(tGT); 
+"#"          return(tNE); 
 "("          return('('); 
 ")"          return(')'); 
 "["          return('['); 
@@ -66,9 +68,6 @@ write        return(tWRITE);
 .            { printf("Fatal Lexing Error on %d", global_line_count); return 0;      }
 
 %%
-
-static char *strings[512];
-static int string_count = 0;
 
 int identifier() {
   // Add to symbol table, return symbol table entry.
