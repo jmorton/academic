@@ -81,10 +81,15 @@ class Emulator
   # 2  800  62   => [2,800,62]
   # 2  801  32   => [2,801,32]
   # 
-  def load!(instruction)
-    instruction.each_line do |line|
-      @code.push(*line.scan(/[^ \t\n]+/).map { |string| string.to_i } )
-    end
+  def load!(file)
+    bytes        = file.split(/\W+/).map { |code| code.to_i }
+    code_start   = 4
+    code_end     = bytes[0] + code_start # header is 4 ints long
+    global_size  = bytes[1]
+    str_size     = bytes[2]
+
+    @code = bytes[code_start...code_end]
+    @data[global_size, str_size] = bytes[code_end, str_size]
 
     return @code
   end
@@ -98,6 +103,7 @@ class Emulator
     
     while @running and (@instruction_pointer < @code.length)
       execute!(fetch!)
+      # printf("\t:: %d\t", @instruction_pointer)
     end
     
     return nil
