@@ -1,0 +1,87 @@
+var w, x, y, z;
+var pass, fail;
+
+proc main()
+  x =  5;
+  y = 10;
+  w =  0;
+
+  writestr("Boolean basic test suite:");
+
+  if (x < y) 
+    writestr("pass 1: x < y"); line; pass = pass + 1;
+  else
+    writestr("fail 1: x < y"); line;
+  endif;
+
+  if (x > y) 
+    writestr("fail 2: x > y"); line;
+  else
+    writestr("pass 2: x > y"); line; pass = pass + 1;
+  endif;
+
+  if (x <= 5)
+    writestr("pass 3: x <= 5"); line; pass = pass + 1;
+  else
+    writestr("fail 3: x <= 5"); line;
+  endif;
+
+  if (x >= 5) 
+    writestr("pass 4: x >= 5"); line; pass = pass + 1;
+  else
+    writestr("fail 4: x >= 5"); line;
+  endif;
+
+  if (x # 0)
+    writestr("pass 5: x # 0"); line; pass = pass + 1;
+  else
+    writestr("fail 5: x # 0"); line;
+  endif;
+
+  if (x # 5)
+    writestr("fail 5b: x # 0"); line;
+  else
+    writestr("pass 5b: x # 0"); line; pass = pass + 1;
+  endif;
+
+  if (5 = x)
+    writestr("pass 6: 5 = x"); line; pass = pass+1;
+  else
+    writestr("fail 6: 5 = x"); line;
+  endif;
+
+  if (6 = x)
+    writestr("fail 6b: 6 = x"); line;
+  else
+    writestr("pass 6b: 6 = x"); line; pass = pass+1;
+  endif;
+
+  if (0 > 1) or (1 > 0)
+    writestr("pass 6: 5 = x"); line; pass = pass + 1;
+  else
+    writestr("fail 7: or with F or T"); line;
+  endif;
+
+  if (1 > 0) or (0 > 1)
+    writestr("pass 6: 5 = x"); line; pass = pass + 1;
+  else
+    writestr("fail 8: or with T or F"); line;
+  endif;
+
+  if ((0 = 0) and (1 = 1))
+    writestr("pass 9: true and true"); line; pass = pass + 1;
+  else
+    writestr("fail 9: true and true"); line;
+  endif;
+
+  if ((0 = 1) and (1 = 2))
+    z = 9;
+    writestr("fail 9: false and false"); line; pass = pass + 1;
+  else
+    writestr("pass 9: false and false"); line;
+  endif;
+
+  writestr("Pass: "); write(pass); line;
+  writestr("Fail: "); write(11 - pass); line;
+
+endproc

@@ -1,0 +1,29 @@
+var x, y, z;
+
+proc main()
+  x = 0;
+  y = 0;
+  z = 5;
+
+  writestr("x: ");
+  read(x);
+
+  writestr("y: ");
+  read(y);
+
+  writestr("z: ");
+  read(z);
+
+  while (x <= z)
+    y = 0;
+    while (y <= z)
+      writestr("y: ");
+      write(y);
+      writestr(", x: ");
+      write(x); line;
+      y = y + 1;
+    endwhile;
+    x = x + 1;
+  endwhile;
+
+endproc

@@ -10,7 +10,7 @@ proc main()
 // the next four lines put as string into prompt[]
    prompt[0] = '-';
    prompt[1] = '>';
-   prompt[2] = 'a';
+   prompt[2] = ' ';
    prompt[3] = 0;
    writestr(prompt);
    read(vals[0]);

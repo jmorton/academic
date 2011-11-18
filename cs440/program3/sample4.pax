@@ -1,0 +1,70 @@
+// CS 440 sample program 4
+// prime number sieve
+
+//                       *** DIRECTIONS ***
+// Compile the following PAXI program and run it on your PVM
+// emulator.  When you execute this program enter some "bad
+// input" several times before entering good user input (to
+// exercise the do loop).  Display a large enough range of primes
+// to make a significant number of lines of output.
+
+array 50001 sieve;
+var start, stop;
+var i, k, count;
+var inner, outer;
+var midpoint, prime;
+
+proc main()
+   // get bounds from user
+   do
+      writestr("Start:  ");
+      read(start);
+      writestr("Stop:  ");
+      read(stop);
+      if ((start > stop) or (start < 2) or (stop > 50000))
+	 writestr("* Start must be at least 2"); line;
+	 writestr("* Stop can be at most 50000"); line;
+	 writestr("* and Start cannot be greater than Stop."); line;
+      endif;
+   endo while (start > stop) or (start < 2) or (stop > 50000);
+   // initialize sieve to "all primes"
+   i = 0;
+   while (i <= stop)
+      sieve[i] = 0;	   // 0 indicates prime
+      i = i + 1;
+   endwhile;
+   // mark non-primes
+   outer = 2;
+   midpoint = stop/2;
+   while (outer <= stop)
+      if (sieve[outer] = 0)	 //  outer is a prime
+	 prime = outer;
+	 inner = 2*outer;
+	 while (inner <= stop)  // mark multiples of outer
+	    sieve[inner] = 1;	  // inner is a composite
+	    inner = inner + prime;
+	 endwhile;
+      endif;
+      outer = outer + 1;
+   endwhile;
+   // read through sieve displaying primes
+   k = start;
+   count = 0;		      // used to decide where to end line
+   while (k <= stop)
+      if (sieve[k] = 0)	      // k is a prime
+	 writestr("    ");
+	 write(k);
+	 if (count = 7)	      // want end of line?
+	    line;
+	    count = 0;
+	 else
+	    count = count + 1;
+	 endif;
+      endif;
+      k = k + 1;	// check next number for prime
+   endwhile;
+   if (count # 0)
+      line;		// final endline if necessary
+   endif;
+endproc
+

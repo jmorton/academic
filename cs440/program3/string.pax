@@ -1,0 +1,21 @@
+var x, y, z;
+array 5 prompt;
+
+proc main()
+  prompt[0] = 't';
+  prompt[1] = 'e';
+  prompt[2] = 's';
+  prompt[3] = 't';
+  prompt[4] = 0;
+  x = 70;
+  y = 70;
+  z = 70;
+  writestr(prompt); line;
+  writestr("* Now is the time for all good mean"); line;
+  prompt[2] = 'n';
+  writestr(prompt); line;
+  writestr("* To come to the aid"); line;
+  prompt[0] = 'b';
+  writestr(prompt); line;
+  writestr("* Of their country."); line;
+endproc
