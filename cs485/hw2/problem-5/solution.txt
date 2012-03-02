@@ -1,0 +1,20 @@
+I spent some time playing with the quadcopter simulation.
+
+I noticed that the function mdl_quadcopter created a number of
+variables in the workspace.  For me, the primary structure to
+experiment with looks like it is called 'quad'.  Within quad are
+a number of variables that appear to control the simulation.
+I was not able to easily locate the way to control the rotor speeds
+for the simulation.  I imagine this is defined somewhat deeply
+inside the toolkit.
+
+However, I could plot the resulting simulation's X/Y/Z commands
+and the rotor speeds.  For some reason, the Z appears to be a
+negative number, though it seems consistent otherwise with how
+the model appeared during the simulation.
+
+% Commands...
+
+plot(result(:,1),result(:,2:4))
+
+plot(result(:,1),result(:,14:17))

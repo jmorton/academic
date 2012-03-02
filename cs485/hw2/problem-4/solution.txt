@@ -1,0 +1,125 @@
+a. Experiment with different values.  I selected a single point
+   and goal orientation.  I know that the first gain parameter,
+   rho is correlated with velocity and that the second and third
+   parameters are correlated with angular velocity (omega).
+   
+   Reducing rho gain should increase the amount of time it takes
+   to the destination.  You can see the difference between a0
+   and a1 have an increase in the number of plots.  I also observed
+   that the robot took a more direct trajectory because it has
+   time to start pointing in the correct direction.
+
+   Alpha and Beta gain have an influence over the angular velocity.
+
+   Alpha is how directly the robot steers towards the goal.  Beta is
+   how quickly the robot will attempt to orient itself to the final
+   position.  In general, it is important that the beta gain does not
+   overtake the alpha gain in such a way that prevents the robot from
+   reaching the goal.
+
+   I observed that the same ratio between the Alpha and Beta appear
+   to have the same trajectory for different values of alpha and beta.
+   For example, -12/12 and -25/25 have the same trajectories.  This
+   can be seen in a4.jpg, a5.jpg, and a6.jpg   
+
+% a0
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [3, -1.5, 8] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a1
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [1, -1.5, 8] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a2
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [3, -15, 8] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a3
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [3, -1.5, 2] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a4
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [1, 1, 1] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a5
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [1, -12, 12] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+% a6 -- trajectory is the same as a5
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)], [1, -25, 25] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+
+b. 
+
+Pose #1.  Turn around 180 degrees.
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi]);
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi);
+
+Pose #2.  Turn around 180 degrees.
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(3/2)]);
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(3/2));
+
+Pose #3.  Turn around 180 degrees.
+
+figure; hold on;
+[x,y,theta] = goTo([10,10,pi*(1/2)]);
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(10,10,pi*(1/2));
+
+
+c. In order to parallel park, the robot will essentially move in a way
+   that looks like an s-curve that is flattened out and stretched.  In
+   principal, this means that the robot will achieve the final pose
+   very close to the goal.  I had difficulty finding a good configuration
+   for alpha and beta that could parallel park in reverse.  However,
+   I think going in reverse is done primarily to maximize control given
+   the wheel configuration of a four wheel vehicle.
+
+c1.jpg
+
+figure; hold on;
+[x,y,theta] = goTo([6,-1.5,0], [4.5, -5, 8] );
+plot_robot(0,0,0);
+plot(x,y,'r.'); title('trajectory');
+plot_robot(6,-1.5,0);
+axis([-1 14 -5 5])
+

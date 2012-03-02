@@ -1,0 +1,134 @@
+Again, having had problems implementing this function on my own,
+I resorted to using the robotics toolkit in matlab in order to
+experiment with various gain settings on velocity and heading.
+
+In the first experiment, I decided to create a line to follow
+defined by the vector:
+
+L = [ 1 -1  4 ];
+
+That is to say, the line:
+
+x - y + 4  =>  y = - (- x - 4)  =>  y = x + 4 ;
+
+plot([0,20],[4,24],'-.') % the line to steer towards
+hold;
+x0  = [10,22, pi/2];
+r   = sim('sl_driveline');
+q   = r.find('yout');
+plot(q(:,1), q(:,2))
+
+Gain: 0.5, Kh: 1
+
+Gain: 0.1, Kh: 1
+
+By reducing the velocity gain and holding the heading gain the path 
+even more gradually approaches the line to follow.
+
+
+Plot #3:
+
+Gain: 1, Kh: 1, Initial: [ 10 22 pi/2 ]
+
+I expected this to veer away from the line more initially because it
+was already far away and facing in the wrong direction.  However, my
+prediction was wrong.  The robot instead loops about and does not
+converge to the line.
+
+Plot #4:
+
+Gain: 1, Kh: 1, x0 = [ 10, 22, 3*pi/2 ]
+
+I expected this to head towards the line despite the gain being high
+because the robot is already heading in the "right" direction.  I was
+wrong.  Like the third plot, the robot simply went in circles.  The
+close up plot 4b shows that the robot travels in circles repeatedly.
+
+r4 = sim('sl_driveline');
+q4 = r4.find('yout');
+plot(q4(:,1), q4(:,2))
+
+Plot #5:
+
+With a velocity gain just less than one, the robot's path approaches
+the line more quickly than it did with a lesser gain.
+
+Gain: 0.9, Kh: 1
+
+x0 = [ 10 22 3*pi/2 ];
+r5 = sim('sl_driveline');
+q5 = r5.find('yout');
+plot(q5(:,1), q5(:,2))
+axis([0,25,0,25]);
+plot([0,20],[4,24],'-.');
+
+Plot #6:
+
+Gain: 0.9, Kh: 1
+
+x0 = [ 10 22 pi/2 ];
+r6 = sim('sl_driveline');
+q6 = r6.find('yout');
+plot(q6(:,1), q6(:,2))
+axis([0,25,0,25]);
+plot([0,20],[4,24],'-.');
+
+After observing the impact of velocity gain on trajectory, I decided
+to move onto experimenting with heading gain.
+
+Plot #10
+
+Gain 0.5, Kh: 0.4
+r10 = sim('sl_driveline');
+q10 = r10.find('yout');
+plot(q10(:,1), q10(:,2))
+hold
+plot([0,20],[4,24],'-.')
+axis([0,10,0,10]);
+hold off
+
+Plot #11
+
+Gain 0.5, Kh: 0.6
+r11 = sim('sl_driveline');
+q11 = r11.find('yout');
+plot(q11(:,1), q11(:,2))
+hold
+plot([0,20],[4,24],'-.')
+axis([0,10,0,10]);
+hold off
+
+x0 = [ 4 9 3*pi/2 ];
+
+Plot #12:
+
+Gain 0.5, Kh: 0.4
+r12 = sim('sl_driveline');
+q12 = r12.find('yout');
+plot(q12(:,1), q12(:,2))
+hold
+plot([0,20],[4,24],'-.')
+axis([0,10,0,10]);
+hold off
+
+Plot #13:
+
+Gain 0.5, Kh: 0.6
+r13 = sim('sl_driveline');
+q13 = r13.find('yout');
+plot(q13(:,1), q13(:,2))
+hold
+plot([0,20],[4,24],'-.')
+axis([0,10,0,10]);
+hold off
+
+Plot #14:
+
+Gain 0.5, Kh: 0.5
+r14 = sim('sl_driveline');
+q14 = r14.find('yout');
+plot(q14(:,1), q14(:,2))
+hold
+plot([0,20],[4,24],'-.')
+axis([0,10,0,10]);
+hold off
