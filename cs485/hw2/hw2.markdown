@@ -1,6 +1,6 @@
 1. Solution 1:
 
-![solution1](problem-1/s1.jpg)
+![solution1](https://github.com/jmorton/academic/blob/master/cs485/hw2/problem-1/s1.jpg)
 
 x0 = [  0  0 pi ];
 xg = [ 10 10    ];
